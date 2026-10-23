@@ -11,7 +11,6 @@ from alembic import op
 import sqlalchemy as sa
 
 
-# revision identifiers, used by Alembic.
 revision: str = 'c2f5c4180c4d'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
@@ -62,7 +61,23 @@ def upgrade() -> None:
     );
     """)
 
+    op.execute("""
+    CREATE TABLE eventos(
+        ID_sala INT,
+        ID_usuario  INT,
+        ID_eventos INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        titulo VARCHAR(250) NOT NULL,
+        descricao TEXT,
+        data_inicio TIMESTAMP NOT NULL,
+        data_fim TIMESTAMP NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ID_usuario) REFERENCES usuario(ID_usuario),
+        FOREIGN KEY (ID_sala) REFERENCES sala(ID_sala)
+    );
+    )
+
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS eventos;")
     op.execute("DROP TABLE IF EXISTS convite;")
     op.execute("DROP TABLE IF EXISTS reuniao;")
     op.execute("DROP TABLE IF EXISTS sala;")
