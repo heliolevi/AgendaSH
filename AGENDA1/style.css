@@ -1,0 +1,98 @@
+body {
+    display: flex;
+    border-radius: 11%;
+    background: linear-gradient(130deg, black, purple, rgb(104, 8, 159), black, rgb(197, 11, 154));
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    
+}
+.card {
+    box-sizing: border-box;
+    border: 10cap;
+    border-radius: 20px;
+    background: linear-gradient(120deg, purple, rgb(135, 64, 211), rgb(63, 7, 84));
+    padding: 20px;
+    height: 425px;
+    width: 500px;
+    text-align: center;
+    font-style: normal;
+    font-family: sans-serif;
+    font-size: larger;
+    color: #dedede;
+    border: 2px solid rgba(255, 255, 255, 0.418);
+}
+
+.cardLogin {
+    box-sizing: border-box;
+    border: 10cap;
+    border-radius: 20px;
+    background: linear-gradient(120deg, purple, rgb(135, 64, 211), rgb(63, 7, 84));
+    padding: 21px;
+    height: 360px;
+    width: 500px;
+    text-align: center;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-style: normal;
+    font-size: larger;
+    color: #dedede;
+    border: 2px solid rgba(255, 255, 255, 0.418);
+    justify-content: column;
+}
+
+/*  o logo da sh
+
+.logoSh {
+    height: 210px;
+    width: 210px;
+    border: 2px solid rgba(255, 255, 255, 0.418);
+    border-radius: 50%;
+
+}*/
+
+.cardLogin input {
+    border-radius: 5px;
+    outline: none;
+    align-items: center;
+
+}
+
+.cardLogin i {
+    position: absolute;
+    translate: calc(-10);
+    color: rgb(207, 203, 203);
+}
+
+
+.Bcadastro {
+    box-sizing: border-box;
+    border-radius: 2px;
+    font-family: sans-serif;
+    font-size: medium;
+}
+
+/* parte de "não tem conta" na Aba entrar*/
+.criarElembrar {
+    font-family: sans-serif;
+    font-style: normal;
+   background: transparent;
+   color: #fff;
+   border-color: #dedede;
+}
+
+.formEsqueciSenha {
+
+    box-sizing: border-box;
+    border: 10cap;
+    border-radius: 20px;
+    background: linear-gradient(120deg, purple, rgb(135, 64, 211), rgb(63, 7, 84));
+    padding: 21px;
+    height: 360px;
+    width: 500px;
+    text-align: center;
+    font-family: sans-serif;
+    font-style: normal;
+    font-size: larger;
+    color: #dedede;
+    border: 2px solid rgba(255, 255, 255, 0.418);
+}
