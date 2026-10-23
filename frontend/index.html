@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgendaSH</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="card">
+        <h2>AgendaSH</h2>
+        <p id="boasVindas"></p>
+        <!-- Módulos: cada um vira uma página em src/modules/<modulo>/pages (ver docs/TASKS.md) -->
+        <p>Salas · Reuniões · Convites · Usuários</p>
+        <p>(em construção pela equipe)</p>
+        <button type="button" id="btnSair">Sair</button>
+    </div>
+    <script src="src/core/api.js"></script>
+    <script>
+        const u = usuarioLogado();
+        if (!u) location.href = "login.html";
+        else document.getElementById("boasVindas").textContent = "Olá, " + u.nome + "!";
+        document.getElementById("btnSair").onclick = () => {
+            localStorage.removeItem("usuario");
+            location.href = "login.html";
+        };
+    </script>
+</body>
+
+</html>
