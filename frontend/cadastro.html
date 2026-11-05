@@ -1,39 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
-    <title>Criar Usuário</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar conta · AgendaSH</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <div class="card">
-        <form id="formCadastro" action="login.html" method="post">
-
-            <h2>Criar Usuário</h2>
-            <div class="nomeUsuario"><label>Usuário</label><br>
-                <input type="text" id="cadUsuario" placeholder="Mínimo 4 caracteres">
-            </div>
-            <div class="nomeEmail"> <label>Seu Email</label><br>
-                <input type="email" id="cadEmail" placeholder="Escreva o Email">
-            </div>
-            <div class="senhaUsuario"><label>Senha do Usuário</label><br>
-                <input type="password" id="cadSenha" placeholder="Mínimo de 6 caracteres">
-            </div>
-            <div class="ConfirmarSenha"><label>Confirmar sua senha</label><br>
-                <input type="password" id="cadConfirma" placeholder="Repita sua senha">
-            </div>
-            <div class="checkbox"><label><input type="checkbox">Lembrar sua senha?</label>
-            </div>
-            <button class="Bcadastro" type="submit">Cadastrar Usuário</button><br>
-
-            <p>Já tem conta? <br><button  type="button" onclick="location.href='login.html'">Voltar ao login</button></p>
-            <p id="msgErro" style="margin:0;color:#ffb3b3;font-family:sans-serif;font-size:medium"></p>
-    </div>
+<main class="app">
+    <div class="logo"><img src="BOTTOM_SH.png" alt="" onerror="this.style.display='none'"><h1>Adendy</h1><span>Softwere house</span></div>
+    <form id="formCadastro" style="margin-top:30px" novalidate>
+        <div class="campo"><label for="cadUsuario">Nome</label><input type="text" id="cadUsuario" autocomplete="name" required></div>
+        <div class="campo"><label for="cadEmail">Email</label><input type="email" id="cadEmail" autocomplete="email" required></div>
+        <div class="campo"><label for="cadSenha">Senha</label><input type="password" id="cadSenha" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required></div>
+        <button class="btn" type="submit">Criar conta</button>
+        <p id="msgErro" class="msg"></p>
     </form>
-    <script src="src/core/api.js"></script>
-    <script src="src/modules/auth/services/auth.js"></script>
+    <a class="link" href="login.html">Já possui conta? Entrar</a>
+</main>
+<script src="src/core/api.js"></script>
+<script src="src/modules/auth/services/auth.js"></script>
 </body>
-
 </html>

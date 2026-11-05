@@ -1,32 +1,36 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgendaSH</title>
+    <title>Início · AgendaSH</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <div class="card">
-        <h2>AgendaSH</h2>
-        <p id="boasVindas"></p>
-        <!-- Módulos: cada um vira uma página em src/modules/<modulo>/pages (ver docs/TASKS.md) -->
-        <p>Salas · Reuniões · Convites · Usuários</p>
-        <p>(em construção pela equipe)</p>
-        <button type="button" id="btnSair">Sair</button>
+<main class="app escuro">
+    <div class="topo">
+        <div>
+            <h1 class="ola">Olá! <b id="nome"></b></h1>
+            <p class="sub">Organize suas reuniões de forma simples,<br>rápida e eficiente.</p>
+        </div>
+        <span id="avatar"></span>
     </div>
-    <script src="src/core/api.js"></script>
-    <script>
-        const u = usuarioLogado();
-        if (!u) location.href = "login.html";
-        else document.getElementById("boasVindas").textContent = "Olá, " + u.nome + "!";
-        document.getElementById("btnSair").onclick = () => {
-            localStorage.removeItem("usuario");
-            location.href = "login.html";
-        };
-    </script>
+    <div class="secao"><h2>Próximas reuniões</h2><p>Acompanhe e gerencie seus compromissos</p></div>
+    <div id="lista"><p class="vazio">Carregando...</p></div>
+</main>
+<script src="src/core/api.js"></script>
+<script src="src/shared/app.js"></script>
+<script>
+    const u = exigirLogin();
+    document.getElementById("nome").textContent = primeiroNome(u) + "!";
+    document.getElementById("avatar").innerHTML = avatarHtml(u);
+    renderNav("inicio");
+    minhasReunioes(u).then((rs) => {
+        const futuras = rs.filter((r) => r.fim >= new Date()).slice(0, 5);
+        document.getElementById("lista").innerHTML = futuras.length
+            ? futuras.map((r) => cartaoReuniao(r, u)).join("")
+            : '<p class="vazio">Nenhuma reunião marcada.<br>Toque no + para agendar.</p>';
+    }).catch((e) => (document.getElementById("lista").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"));
+</script>
 </body>
-
 </html>

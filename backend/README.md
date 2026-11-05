@@ -10,6 +10,8 @@ uvicorn app.main:app --reload
 ```
 Docs interativas: http://localhost:8000/docs
 
+Rotas, formato de erro e middlewares: `docs/API.md`. Testes: `python -m pytest -q` (dentro de `backend`, com o venv ativo; `pip install -r ../requirements-dev.txt`).
+
 ## Estrutura (1 módulo = 1 tabela)
 ```
 app/
