@@ -22,7 +22,13 @@ CABECALHOS_SEGURANCA = {
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",  # respostas da API nunca ficam em cache
+    "Permissions-Policy": "geolocation=(), camera=(), microphone=()",
+    "Cross-Origin-Resource-Policy": "same-site",
+    "Cross-Origin-Opener-Policy": "same-origin",
 }
+# A API só devolve JSON: nada de scripts, estilos ou frames. (/docs precisa de CDN, então fica de fora.)
+CSP_API = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+ROTAS_DOCS = ("/docs", "/redoc", "/openapi.json")
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -34,6 +40,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         resposta.headers["X-Request-ID"] = request.state.request_id
         for k, v in CABECALHOS_SEGURANCA.items():
             resposta.headers.setdefault(k, v)
+        if not request.url.path.startswith(ROTAS_DOCS):
+            resposta.headers.setdefault("Content-Security-Policy", CSP_API)
+        # HSTS só vale em HTTPS (produção, atrás do proxy); em http local seria ignorado.
+        if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+            resposta.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         # Só método, caminho e status: nunca corpo nem query string (podem ter senha/e-mail).
         log.info("%s %s -> %s (%.0f ms) [%s]", request.method, request.url.path, resposta.status_code, ms, request.state.request_id)
         return resposta

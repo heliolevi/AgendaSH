@@ -167,3 +167,5 @@ body {
 .nav a.ativo svg { filter: drop-shadow(0 0 5px #22d3ee); }
 .nav .mais { width: 66px; height: 66px; margin-top: -22px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle, #1b1f8f, #0a0a40); border: 3px solid #7a5cff; box-shadow: 0 0 18px #8b5cf6; }
 .nav .mais svg { width: 38px; height: 38px; }
+
+.dica { margin: 6px 6px 0; font-size: .68rem; color: var(--suave); line-height: 1.3; }

@@ -11,7 +11,8 @@
     <div class="logo"><img src="BOTTOM_SH.png" alt="" onerror="this.style.display='none'"><h1>Adendy</h1><span>Softwere house</span></div>
     <form id="formCadastro" style="margin-top:30px" novalidate>
         <div class="campo"><label for="cadUsuario">Nome</label><input type="text" id="cadUsuario" autocomplete="name" required></div>
-        <div class="campo"><label for="cadEmail">Email</label><input type="email" id="cadEmail" autocomplete="email" required></div>
+        <div class="campo"><label for="cadEmail">Email</label><input type="email" id="cadEmail" autocomplete="email" placeholder="002-02XXXXXX@aluno.undb.edu.br" maxlength="100" required>
+            <p class="dica">Use seu e-mail institucional da UNDB (aluno: 002-02…@aluno.undb.edu.br · professor: nome@undb.edu.br).</p></div>
         <div class="campo"><label for="cadSenha">Senha</label><input type="password" id="cadSenha" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required></div>
         <button class="btn" type="submit">Criar conta</button>
         <p id="msgErro" class="msg"></p>

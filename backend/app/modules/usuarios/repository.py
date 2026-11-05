@@ -11,7 +11,7 @@ def buscar(conn, id_usuario: int):
 
 def buscar_por_email(conn, email: str):
     """Retorna também senha_hash (uso interno do login)."""
-    return conn.execute("SELECT * FROM usuario WHERE email = %s", (email,)).fetchone()
+    return conn.execute("SELECT * FROM usuario WHERE lower(email) = lower(%s)", (email,)).fetchone()
 
 
 def criar(conn, nome: str, email: str, senha_hash: str):
