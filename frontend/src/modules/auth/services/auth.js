@@ -21,6 +21,14 @@ async function entrar(e) {
     }
 }
 
+// Pré-checagem só para dar resposta rápida; quem decide de verdade é o backend (backend/app/core/email_policy.py).
+const EMAIL_ALUNO = /^002-02\d{1,10}@aluno\.undb\.edu\.br$/;
+const EMAIL_PROFESSOR = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@undb\.edu\.br$/;
+function emailUndbValido(email) {
+    const e = email.trim().toLowerCase();
+    return EMAIL_ALUNO.test(e) || EMAIL_PROFESSOR.test(e);
+}
+
 const formCadastro = document.getElementById("formCadastro");
 if (formCadastro) {
     formCadastro.addEventListener("submit", async (e) => {
@@ -31,9 +39,10 @@ if (formCadastro) {
         const senha = document.getElementById("cadSenha").value;
         if (!nome) return (msg.textContent = "Informe seu nome");
         if (!email) return (msg.textContent = "Informe seu e-mail");
+        if (!emailUndbValido(email)) return (msg.textContent = "Use seu e-mail institucional da UNDB (002-02…@aluno.undb.edu.br ou nome@undb.edu.br).");
         if (senha.length < 6) return (msg.textContent = "Senha precisa de no mínimo 6 caracteres");
         try {
-            await api("/usuarios", { method: "POST", body: { nome, email, senha } });
+            await api("/usuarios", { method: "POST", body: { nome, email: email.toLowerCase(), senha } });
             // já entra direto após criar a conta
             const usuario = await api("/auth/login", { method: "POST", body: { email, senha } });
             localStorage.setItem("usuario", JSON.stringify(usuario));

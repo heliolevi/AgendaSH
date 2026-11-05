@@ -33,7 +33,7 @@ Base local: `http://localhost:8000` · Documentação interativa (testar no nave
 ### Middlewares (já ativos, em `backend/app/core/`)
 Ordem de fora para dentro: **CORS → RequestContext → CatchAll → rotas**.
 - **CORS** (`main.py`): só aceita as origens da variável `CORS_ORIGINS` (padrão `http://localhost:5500,http://127.0.0.1:5500`). Fica por fora para que *até as respostas de erro* tenham CORS; sem isso o navegador mostra "NetworkError" em vez do erro real.
-- **RequestContext** (`middleware.py`): cria o `X-Request-ID`, mede o tempo, grava uma linha de log por requisição (método, caminho, status, ms; **nunca corpo nem query string**) e adiciona `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cache-Control: no-store`.
+- **RequestContext** (`middleware.py`): cria o `X-Request-ID`, mede o tempo, grava uma linha de log por requisição (método, caminho, status, ms; **nunca corpo nem query string**) e adiciona cabeçalhos de segurança: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cache-Control: no-store`, `Content-Security-Policy` (`default-src 'none'`), `Permissions-Policy`, `Cross-Origin-Resource-Policy`, `Cross-Origin-Opener-Policy` e, em HTTPS, `Strict-Transport-Security`. Eles protegem o **navegador** (clickjacking, sniffing, vazamento de referrer); **não** validam e-mail. Quem barra e-mail falso é a regra de e-mail acima.
 - **CatchAll** (`middleware.py`): qualquer exceção não tratada vira JSON padronizado. Erros do Postgres são convertidos (duplicado → 409, FK → 409, dado inválido → 400, banco fora → 503). Nunca devolve traceback, SQL ou texto do banco.
 - **Handlers** (`errors.py`): 422 em português e 404/405 no mesmo formato.
 
@@ -72,6 +72,15 @@ Modelo de resposta `UsuarioOut`: `id_usuario`, `nome`, `email`, `criado_em`. **O
 | `POST /usuarios` | `{nome (1-100), email (≤100), senha (≥6)}` | `201` `UsuarioOut` | `409` e-mail já cadastrado, `422` |
 | `PUT /usuarios/{id}` | `{nome?, email?}` (só o que enviar muda) | `200` `UsuarioOut` | `404`, `409`, `422` |
 | `DELETE /usuarios/{id}` | – | `204` | `404`, `409` se tem reuniões/convites |
+
+**Regra de e-mail (T6, `backend/app/core/email_policy.py`):** `POST /usuarios` e `PUT /usuarios/{id}` só aceitam e-mail da UNDB, sempre salvo em minúsculas:
+
+| Tipo | Formato aceito | Exemplo |
+|---|---|---|
+| Aluno | `002-02` + dígitos, domínio exato `aluno.undb.edu.br` | `002-021234@aluno.undb.edu.br` |
+| Professor/colaborador | nome começando com letra (letras, números, `.` `_` `-`), domínio exato `undb.edu.br` | `maria.silva@undb.edu.br` |
+
+Recusado com `422` (`DADOS_INVALIDOS`): Gmail, Outlook, Yahoo e qualquer outro provedor; domínios de golpe (`undb.edu.br.golpe.net`, `xundb.edu.br`, `evil.undb.edu.br`); letras de outro alfabeto e `xn--`; mais de um `@`, espaço, vírgula, `<>`, aspas, quebra de linha; `+tag`; matrícula fora do padrão. Configurável por `EMAIL_DOMINIO_ALUNO`, `EMAIL_PREFIXO_ALUNO` e `EMAIL_DOMINIOS_PROFESSOR` (ver `.env.example`). Esta regra prova o **formato**; que a pessoa **recebe** na caixa será provado pelo código de confirmação (T9/T13).
 
 > **Vai mudar:** `GET /usuarios` devolve só `id` e `nome` (T10/T14); `PUT`/`DELETE` só na própria conta (T12); cadastro com código por e-mail, domínios permitidos e senha mínima 8 (T6/T9); resposta de cadastro idêntica exista a conta ou não (T9).
 

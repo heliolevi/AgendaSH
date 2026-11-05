@@ -31,7 +31,7 @@ Legenda de **Quem**: `A + Hélio` = A é o responsável, Hélio faz junto (par) 
 ## Decisões do kickoff (T1, sex 06/11, 30 min, todos)
 | Decisão | Sugestão | Quem decide |
 |---|---|---|
-| Domínios que contam como estudante | Lista em variável de ambiente (`EMAIL_DOMINIOS_PERMITIDOS`). **Falta confirmar o domínio real da instituição** | Time |
+| Domínios aceitos | **Decidido: só UNDB.** Aluno `002-02…@aluno.undb.edu.br`; professor/colaborador `…@undb.edu.br`. Domínio por igualdade exata, configurável em `EMAIL_DOMINIO_ALUNO`, `EMAIL_PREFIXO_ALUNO`, `EMAIL_DOMINIOS_PROFESSOR` | ✅ Hélio |
 | Como enviar e-mail | SMTP ou API; em dev, o código aparece no console | Iago e Anderson |
 | Validade do código | 30 min, uso único | Time |
 | Senha mínima | 8 (aceitar até 64+) | Time |
@@ -61,7 +61,7 @@ Começam já, sem esperar: **T1, T2, T3**. O banco (T4) e o e-mail (T5) travam a
 | T3 | Login com JWT: `/auth/login` devolve o token; `/auth/me` devolve a própria pessoa | **Anderson + Hélio** | seg 09/11 | – | ⬜ |
 | T4 | Migrations (Alembic ou SQL numerado): colunas de verificação, tabela de códigos, campos obrigatórios (`NOT NULL`), `CHECK` de status, trava de horário (`EXCLUDE USING gist`), tratar contas antigas | **Derick + Hélio** | ter 10/11 | T1 | ⬜ |
 | T5 | Serviço de envio de e-mail, com modo de teste que mostra o código no console | Iago | ter 10/11 | T1 | ⬜ |
-| T6 | Regra de e-mail de estudante: domínios em variável de ambiente + validação de formato (no backend) | Iago | ter 10/11 | T1 | ⬜ |
+| T6 | Regra de e-mail da UNDB (aluno e professor), domínios em variável de ambiente, bloqueio de provedores gratuitos e golpes (backend) | Iago (Hélio fez a base) | ter 10/11 | T1 | ✅ feito na branch `feat/validacao-email-undb`; falta revisão e merge |
 | T7 | Proteger as rotas; organizador = usuário do token (remover `id_usuario` do corpo de `/reunioes`) | **Anderson + Hélio** | qua 11/11 | T3 | ⬜ |
 | T9 | Cadastro com verificação: conta nasce não verificada, código aleatório, uso único, validade; **resposta sempre igual** exista a conta ou não | **Iago + Hélio** | qui 12/11 | T4, T5, T6 | ⬜ |
 | T10 | Respostas mínimas: usuário público só com `id` e `nome`; perfil completo só da própria pessoa; colunas explícitas no lugar de `SELECT *` | **Anderson + Hélio** | qui 12/11 | T7 | ⬜ |
@@ -113,7 +113,8 @@ Cortar nesta ordem: **T34** (recuperar senha) → **T33** (editar reunião) → 
 ## Pontos de atenção
 - **Contas antigas:** tratar na T4, senão ninguém antigo consegue entrar.
 - **E-mail pode cair no spam:** testar na homologação (T17) com caixa real do domínio de estudante.
-- **Domínio de estudante** ainda não confirmado: sem isso a T6 não fecha.
+- **Contas antigas com e-mail fora da UNDB** (testes) continuam no banco; tratar na T4. A regra vale só para cadastro novo e troca de e-mail.
+- **Professores:** confirmar com a UNDB se todo professor/colaborador usa `@undb.edu.br` (se houver outro domínio, adicionar em `EMAIL_DOMINIOS_PROFESSOR`).
 - **Feriados locais** entre 06/11 e 19/11: confirmar.
 - Fora do escopo: integração com Google Calendar/Meet.
 
