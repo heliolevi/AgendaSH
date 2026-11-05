@@ -45,7 +45,7 @@ Legenda de **Quem**: `A + Hélio` = A é o responsável, Hélio faz junto (par) 
 | Middlewares: erro global em JSON (sem traceback, com CORS), `X-Request-ID`, log por requisição, cabeçalhos de segurança, CORS por `CORS_ORIGINS` (`backend/app/core/`) | Hélio | ✅ |
 | Handlers 422/404/405 no formato `{detail, codigo, request_id}` e erros do Postgres mapeados (409/400/503) | Hélio | ✅ |
 | 13 testes dos middlewares (`backend/tests`), `docs/API.md` | Hélio | ✅ |
-| `requirements.txt` alinhado ao código (adicionado `psycopg`; removidos `sqlalchemy`, `pymysql`, `python-multipart`) + `requirements-dev.txt` | Hélio | ✅ (T2: falta Iago conferir o README) |
+| `requirements.txt` alinhado ao código (adicionado `psycopg`; removidos `sqlalchemy`, `pymysql`, `python-multipart`) + `requirements-dev.txt` | Hélio | ✅ (T2 concluída: README da raiz e do backend atualizados) |
 | `api.js` do front trata servidor fora do ar e expõe `erro.status`/`erro.codigo` | Hélio | ✅ |
 
 ## Caminhos críticos (se atrasar, atrasa a entrega)
@@ -57,7 +57,7 @@ Começam já, sem esperar: **T1, T2, T3**. O banco (T4) e o e-mail (T5) travam a
 ## Backend
 | ID | Tarefa | Quem | Prazo | Depende | Status |
 |---|---|---|---|---|---|
-| T2 | Alinhar `requirements.txt` e README com o que o código usa | Iago | sex 06/11 | – | 🟡 requirements feito; conferir README |
+| T2 | Alinhar `requirements.txt` e README com o que o código usa | Iago | sex 06/11 | – | ✅ requirements e READMEs alinhados |
 | T3 | Login com JWT: `/auth/login` devolve o token; `/auth/me` devolve a própria pessoa | **Anderson + Hélio** | seg 09/11 | – | ⬜ |
 | T4 | Migrations (Alembic ou SQL numerado): colunas de verificação, tabela de códigos, campos obrigatórios (`NOT NULL`), `CHECK` de status, trava de horário (`EXCLUDE USING gist`), tratar contas antigas | **Derick + Hélio** | ter 10/11 | T1 | ⬜ |
 | T5 | Serviço de envio de e-mail, com modo de teste que mostra o código no console | Iago | ter 10/11 | T1 | ⬜ |
