@@ -62,7 +62,7 @@ def upgrade() -> None:
     """)
 
     op.execute("""
-    CREATE TABLE eventos(
+    CREATE TABLE IF NOT EXISTS eventos(
         ID_sala INT,
         ID_usuario  INT,
         ID_eventos INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -74,9 +74,21 @@ def upgrade() -> None:
         FOREIGN KEY (ID_usuario) REFERENCES usuario(ID_usuario),
         FOREIGN KEY (ID_sala) REFERENCES sala(ID_sala)
     );
-    )
-
+    """)
+    op.execute("""
+    CREATE TABLE IF NOT EXISTS tokens(
+        ID_token INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        ID_usuario INT NOT NULL REFERENCES usuario(ID_usuario) ON DELETE CASCADE,
+        token VARCHAR(500) NOT NULL UNIQUE,
+        tipo VARCHAR(50) NOT NULL DEFAULT 'refresh',
+        expira_em TIMESTAMP NOT NULL,
+        revogado BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+    
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS tokens;")
     op.execute("DROP TABLE IF EXISTS eventos;")
     op.execute("DROP TABLE IF EXISTS convite;")
     op.execute("DROP TABLE IF EXISTS reuniao;")
