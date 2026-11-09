@@ -1,14 +1,18 @@
 # Backend AgendaSH (FastAPI + PostgreSQL/Neon)
 
-## Rodar
+## Rodar (PowerShell, dentro de `backend`; um comando por linha)
 ```
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+Set-ExecutionPolicy -Scope Process Bypass
+.venv\Scripts\Activate.ps1
+python -m pip install -r ..\requirements-dev.txt
 copy .env.example .env      # preencher DATABASE_URL (nunca commitar o .env)
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
+Passo a passo completo, variáveis do `.env` e problemas comuns: README da raiz.
 Docs interativas: http://localhost:8000/docs
+
+Rotas, formato de erro e middlewares: `docs/API.md`. Testes: `python -m pytest -q` (dentro de `backend`, com o venv ativo; `pip install -r ../requirements-dev.txt`).
 
 ## Estrutura (1 módulo = 1 tabela)
 ```

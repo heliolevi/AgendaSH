@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest
+httpx
+psycopg2-binary  # só para create_table.py / test_db.py
