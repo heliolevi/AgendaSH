@@ -70,6 +70,10 @@ Cuidados:
 - Depois de editar o `.env`, **reinicie o uvicorn**. O `--reload` não observa esse arquivo.
 - O `.env` é lido a partir da pasta `backend`. Rode o uvicorn de dentro dela.
 
+### Recuperar senha em desenvolvimento
+
+Sem `SMTP_HOST` no `.env`, nenhum e-mail é enviado. Em `esqueciSenha.html`, informe o e-mail, olhe o **terminal do uvicorn**, copie o link da linha `Link de recuperação para ...` e abra no navegador. Para enviar de verdade, preencha `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` e `SMTP_FROM`. Defina também `RESET_SECRET` (valor longo e aleatório). Detalhes em [`API.md`](API.md).
+
 ## 4. Frontend (terminal 2)
 
 ```powershell
@@ -114,7 +118,8 @@ Gmail, Outlook e domínios parecidos são recusados com erro 422. A regra está 
 | Script de ativação bloqueado | `Set-ExecutionPolicy -Scope Process Bypass` (vale só para aquele terminal) |
 | `503` / "Serviço temporariamente indisponível" | Neon fora do ar ou sem internet |
 | `422` ao cadastrar | E-mail fora do padrão UNDB ou senha com menos de 6 caracteres |
-| Mudei o `.env` e nada mudou | Reinicie o uvicorn |
+| Mudei o `.env` ou o código e nada mudou | Reinicie o uvicorn. O `--reload` demora ou não percebe mudanças dentro do OneDrive; se precisar, suba sem ele |
+| `401` no login de conta antiga | A conta tem hash de senha em formato antigo (bcrypt). Use "Recuperar senha" |
 | Porta 8000 ou 5500 já em uso | Feche o processo anterior ou use outra porta (e ajuste `CORS_ORIGINS` e `api.js`) |
 
 Ao investigar um erro 500, veja o terminal do uvicorn: cada requisição tem uma linha com o `request_id`, e o erro completo aparece no log.

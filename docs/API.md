@@ -61,6 +61,16 @@ Erros: `401` e-mail ou senha inválidos (mesma mensagem nos dois casos, de prop�
 
 ---
 
+### `POST /auth/esqueci-senha`
+Pede o link para redefinir a senha. Corpo: `{ "email": "ana@undb.edu.br" }`.
+Resposta **sempre** `200 {"detail": "Se o e-mail estiver cadastrado, enviamos um link..."}`, exista a conta ou não (não revela quem tem cadastro). O link é `FRONT_URL/esqueciSenha.html?token=...`, vale 30 min (`RESET_TTL_MINUTOS`) e só pode ser usado uma vez.
+Sem `SMTP_HOST` no `.env` (desenvolvimento) o e-mail **não é enviado**: o link aparece no log do uvicorn (linha `WARNING ... Link de recuperação`).
+
+### `POST /auth/redefinir-senha`
+Troca a senha com o token do link. Corpo: `{ "token": "...", "nova_senha": "mínimo 6 caracteres" }`.
+`200` se deu certo. `400` (`REQUISICAO_INVALIDA`) se o link for inválido, expirado ou já usado. `422` se a senha for curta.
+Contas antigas com hash em outro formato (ex.: bcrypt) não conseguem logar (`401`); use esta recuperação para gravar uma senha válida.
+
 ## Usuários — `/usuarios`
 
 Modelo de resposta `UsuarioOut`: `id_usuario`, `nome`, `email`, `criado_em`. **O hash da senha nunca sai** (teste automático em T26).

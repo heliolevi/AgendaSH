@@ -9,13 +9,18 @@
 <body>
 <main class="app">
     <div class="logo"><img src="BOTTOM_SH.png" alt="" onerror="this.style.display='none'"><h1>Adendy</h1><span>Softwere house</span></div>
-    <form id="formRecuperar" style="margin-top:30px" novalidate>
-        <div class="campo"><label for="recEmail">Email</label><input type="email" id="recEmail" required></div>
-        <div class="campo"><label for="recSenha">Senha nova</label><input type="password" id="recSenha" required></div>
-        <div class="campo"><label for="recConfirma">Confirmar senha</label><input type="password" id="recConfirma" required></div>
-        <button class="btn" type="submit">Salvar senha</button>
-        <p id="msgErro" class="msg"></p>
+    <!-- Etapa 1: pedir o link por e-mail -->
+    <form id="formEsqueci" style="margin-top:30px" novalidate>
+        <div class="campo"><label for="recEmail">Email</label><input type="email" id="recEmail" autocomplete="email" required></div>
+        <button class="btn" type="submit">Enviar link</button>
     </form>
+    <!-- Etapa 2: abre pelo link do e-mail (?token=...) e define a nova senha -->
+    <form id="formRecuperar" style="margin-top:30px;display:none" novalidate>
+        <div class="campo"><label for="recSenha">Senha nova</label><input type="password" id="recSenha" autocomplete="new-password" required></div>
+        <div class="campo"><label for="recConfirma">Confirmar senha</label><input type="password" id="recConfirma" autocomplete="new-password" required></div>
+        <button class="btn" type="submit">Salvar senha</button>
+    </form>
+    <p id="msgErro" class="msg"></p>
     <a class="link" href="login.html">Voltar ao login</a>
 </main>
 <script src="src/core/api.js"></script>
