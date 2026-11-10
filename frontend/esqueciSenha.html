@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar senha · AgendaSH</title>
     <link rel="stylesheet" href="style.css">
-    <title>Esqueci minha senha</title>
 </head>
-
 <body>
-    <form action="cadastro.html" method="get" class="formEsqueciSenha">
-        <h2>Esqueci minha Senha </h2>
-        <label for="Email">Digite o Email cadastrado</label><br>
-        <input type="email" placeholder="Digite o Email"><br>
-        <label>Digite sua nova senha</label><br>
-        <input type="password" id="nvSenha" placeholder="Nova senha"><br>
-        <label>Confirme a senha</label><br>
-        <input type="password" id="confirmNvsenha" placeholder=" Repita a nova senha"><br>
-        <button>Atualizar a nova senha</button>
+<main class="app">
+    <div class="logo"><img src="BOTTOM_SH.png" alt="" onerror="this.style.display='none'"><h1>Adendy</h1><span>Softwere house</span></div>
+    <form id="formRecuperar" style="margin-top:30px" novalidate>
+        <div class="campo"><label for="recEmail">Email</label><input type="email" id="recEmail" required></div>
+        <div class="campo"><label for="recSenha">Senha nova</label><input type="password" id="recSenha" required></div>
+        <div class="campo"><label for="recConfirma">Confirmar senha</label><input type="password" id="recConfirma" required></div>
+        <button class="btn" type="submit">Salvar senha</button>
+        <p id="msgErro" class="msg"></p>
     </form>
+    <a class="link" href="login.html">Voltar ao login</a>
+</main>
+<script src="src/core/api.js"></script>
+<script src="src/modules/auth/services/auth.js"></script>
 </body>
-
 </html>

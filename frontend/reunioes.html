@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reuniões · AgendaSH</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app escuro">
+    <div class="topo"><h1 class="titulo">Reuniões</h1><span id="avatar"></span></div>
+    <div id="lista"><p class="vazio">Carregando...</p></div>
+    <p id="msgErro" class="msg"></p>
+</main>
+<script src="src/core/api.js"></script>
+<script src="src/shared/app.js"></script>
+<script>
+    const u = exigirLogin();
+    document.getElementById("avatar").innerHTML = avatarHtml(u);
+    renderNav("reunioes");
+    async function carregar() {
+        const lista = document.getElementById("lista");
+        try {
+            const rs = await minhasReunioes(u);
+            lista.innerHTML = rs.length ? rs.map((r) => cartaoReuniao(r, u, true)).join("") : '<p class="vazio">Você ainda não tem reuniões.</p>';
+        } catch (e) { lista.innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
+    }
+    document.getElementById("lista").addEventListener("click", async (ev) => {
+        const b = ev.target.closest(".excluir");
+        if (!b || !confirm("Cancelar esta reunião?")) return;
+        try { await api("/reunioes/" + b.dataset.id, { method: "DELETE" }); carregar(); }
+        catch (e) { document.getElementById("msgErro").textContent = e.message; }
+    });
+    carregar();
+</script>
+</body>
+</html>
