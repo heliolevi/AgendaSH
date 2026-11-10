@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil · AgendaSH</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app escuro">
+    <div id="avatar"></div>
+    <h1 class="nome-grande" id="nome"></h1>
+    <p class="nome-completo" id="nomeCompleto"></p>
+    <section class="painel">
+        <h3>Informações Pessoais</h3>
+        <div class="item"><small>Nome completo</small><span id="pNome"></span></div>
+        <div class="item"><small>E-mail</small><span id="pEmail"></span></div>
+        <div class="item"><small>Membro desde</small><span id="pDesde"></span></div>
+    </section>
+    <section class="painel">
+        <button class="acao" id="btnEditar" type="button">Editar seu Perfil <i>›</i></button>
+        <form id="formPerfil" hidden style="padding-top:10px" novalidate>
+            <div class="campo"><label for="eNome">Nome</label><input id="eNome" maxlength="100" required></div>
+            <div class="campo"><label for="eEmail">E-mail</label><input id="eEmail" type="email" maxlength="100" required></div>
+            <button class="btn" type="submit">Salvar</button>
+        </form>
+        <button class="acao" id="btnSair" type="button">Sair <i>›</i></button>
+    </section>
+    <p id="msgErro" class="msg"></p>
+</main>
+<script src="src/core/api.js"></script>
+<script src="src/shared/app.js"></script>
+<script>
+    let u = exigirLogin();
+    renderNav("perfil");
+    const $ = (id) => document.getElementById(id);
+    function mostrar() {
+        $("avatar").innerHTML = avatarHtml(u, "grande");
+        $("nome").textContent = primeiroNome(u);
+        $("nomeCompleto").textContent = u.nome;
+        $("pNome").textContent = u.nome;
+        $("pEmail").textContent = u.email;
+        $("pDesde").textContent = u.criado_em ? new Date(u.criado_em).toLocaleDateString("pt-BR") : "-";
+    }
+    mostrar();
+    $("btnSair").onclick = sair;
+    $("btnEditar").onclick = () => {
+        $("eNome").value = u.nome; $("eEmail").value = u.email;
+        $("formPerfil").hidden = !$("formPerfil").hidden;
+    };
+    $("formPerfil").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        $("msgErro").className = "msg";
+        try {
+            u = await api("/usuarios/" + u.id_usuario, { method: "PUT", body: { nome: $("eNome").value.trim(), email: $("eEmail").value.trim() } });
+            localStorage.setItem("usuario", JSON.stringify(u));
+            mostrar(); $("formPerfil").hidden = true;
+            $("msgErro").className = "msg ok"; $("msgErro").textContent = "Perfil atualizado";
+        } catch (err) { $("msgErro").textContent = err.message; }
+    });
+</script>
+</body>
+</html>

@@ -12,16 +12,21 @@ cd frontend && python -m http.server 5500
 ```
 Abrir http://localhost:5500/login.html (a URL da API fica em `src/core/api.js`).
 
-## O que já existe
-- `login.html`: entra com **e-mail** + senha (`POST /auth/login`) e guarda o usuário no `localStorage`
-- `cadastro.html`: cria usuário (`POST /usuarios`)
-- `esqueciSenha.html`: só o layout (sem rota na API ainda)
-- `index.html`: home provisória, protegida (volta ao login se não houver usuário) com botão Sair
+## O que já existe (MVP, baseado no protótipo mobile)
+- `welcome.html`: tela inicial (Criar conta / Entrar)
+- `cadastro.html` (`POST /usuarios`, já entra logado) · `login.html` (`POST /auth/login`)
+- `esqueciSenha.html`: só o layout (a API ainda não tem rota de recuperação)
+- `index.html`: home com próximas reuniões (organizadas por você ou com convite)
+- `calendario.html`: calendário mensal + agendar (horário, modo, nome, local). Modo+Local viram uma `sala` (reaproveita ou cria); duração fixa de 1h; erro 409 de conflito é exibido
+- `reunioes.html`: lista de reuniões com cancelar (só organizador)
+- `perfil.html`: dados do usuário, editar perfil (`PUT /usuarios/{id}`), sair
+- Logo: `BOTTOM_SH.png` (ícone oficial da SH, usado nas telas de entrada)
 
 ## Estrutura de módulos (espelha o backend)
 ```
 src/
 ├── core/api.js              # cliente HTTP + usuarioLogado()
+├── shared/app.js            # guarda de login, barra inferior, leitura de reuniões
 ├── shared/                  # componentes/utilitários reutilizáveis
 └── modules/
     ├── auth/services/auth.js
