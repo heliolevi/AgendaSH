@@ -53,14 +53,39 @@ if (formCadastro) {
     });
 }
 
-// Recuperar senha: a API ainda não tem rota para isso (precisa de envio de e-mail/token).
+// Recuperar senha: etapa 1 pede o link por e-mail; etapa 2 (abre com ?token=...) grava a nova senha.
+const formEsqueci = document.getElementById("formEsqueci");
 const formRecuperar = document.getElementById("formRecuperar");
-if (formRecuperar) {
-    formRecuperar.addEventListener("submit", (e) => {
+if (formEsqueci && formRecuperar) {
+    const token = new URLSearchParams(location.search).get("token");
+    formEsqueci.style.display = token ? "none" : "";
+    formRecuperar.style.display = token ? "" : "none";
+
+    formEsqueci.addEventListener("submit", async (e) => {
         e.preventDefault();
+        msg.textContent = "";
+        const email = document.getElementById("recEmail").value.trim();
+        if (!email) return (msg.textContent = "Informe seu e-mail");
+        try {
+            const r = await api("/auth/esqueci-senha", { method: "POST", body: { email } });
+            msg.textContent = r.detail;
+        } catch (erro) {
+            msg.textContent = erro.message;
+        }
+    });
+
+    formRecuperar.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        msg.textContent = "";
         const nova = document.getElementById("recSenha").value;
         if (nova.length < 6) return (msg.textContent = "Senha precisa de no mínimo 6 caracteres");
         if (nova !== document.getElementById("recConfirma").value) return (msg.textContent = "As senhas não conferem");
-        msg.textContent = "Recuperação de senha ainda não disponível nesta versão. Fale com o administrador.";
+        try {
+            const r = await api("/auth/redefinir-senha", { method: "POST", body: { token, nova_senha: nova } });
+            msg.textContent = r.detail;
+            setTimeout(() => (location.href = "login.html"), 1500);
+        } catch (erro) {
+            msg.textContent = erro.message;
+        }
     });
 }
