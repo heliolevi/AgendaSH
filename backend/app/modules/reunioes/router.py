@@ -1,13 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
-from psycopg.errors import ForeignKeyViolation
-
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from .schemas import ReuniaoOut, ReuniaoCreate, ReuniaoUpdate
+from .repository import repo
 from app.core.database import get_conn
-from app.modules.reunioes import repository as repo
-from app.modules.reunioes.schemas import ReuniaoCreate, ReuniaoOut
-
-router = APIRouter(prefix="/reunioes", tags=["reunioes"])
-
-
+from datetime import datetime
 def _validar(conn, d: dict, ignorar_id: int | None = None):
     if repo.existe_conflito(conn, d["id_sala"], d["data_inicio"], d["data_fim"], ignorar_id):
         raise HTTPException(409, "A sala já está reservada nesse horário")
@@ -27,15 +22,24 @@ def buscar(id_reuniao: int, conn=Depends(get_conn)):
 
 
 @router.post("", response_model=ReuniaoOut, status_code=201)
-def criar(dados: ReuniaoCreate, conn=Depends(get_conn)):
+def criar(dados: ReuniaoCreate, background_tasks: BackgroundTasks, conn=Depends(get_conn)):
     d = dados.model_dump()
     _validar(conn, d)
     try:
-        return repo.criar(conn, d)
+        reuniao = repo.criar(conn, d)
+        
+        # E-mail real em segundo plano
+        background_tasks.add_task(
+            email_service.send_agendamento_email,
+            cliente_email=getattr(reuniao, 'email', 'teste@aluno.com'),
+            cliente_nome=getattr(reuniao, 'titulo', 'Cliente'),
+            agendamento_id=reuniao.id,
+            data_hora=getattr(reuniao, 'data_hora', datetime.now())
+        )
+        return reuniao
     except ForeignKeyViolation:
         raise HTTPException(400, "Usuário ou sala inexistente")
-
-
+    
 @router.put("/{id_reuniao}", response_model=ReuniaoOut)
 def atualizar(id_reuniao: int, dados: ReuniaoCreate, conn=Depends(get_conn)):
     d = dados.model_dump()
