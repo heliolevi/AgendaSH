@@ -4,16 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Criar conta · AgendaSH</title>
+    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
+    <meta name="theme-color" content="#0b0a2a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="app">
-    <div class="logo"><img src="BOTTOM_SH.png" alt="" onerror="this.style.display='none'"><h1>Adendy</h1><span>Softwere house</span></div>
+    <div class="logo"><img src="img/logo-sh.webp" alt="Software House UNDB" width="520" height="511"><h1>AgendaSH</h1><span>Software House</span></div>
     <form id="formCadastro" style="margin-top:30px" novalidate>
-        <div class="campo"><label for="cadUsuario">Nome</label><input type="text" id="cadUsuario" autocomplete="name" required></div>
-        <div class="campo"><label for="cadEmail">Email</label><input type="email" id="cadEmail" autocomplete="email" placeholder="002-02XXXXXX@aluno.undb.edu.br" maxlength="100" required>
+        <div class="campo ico ico-user"><label for="cadUsuario">Nome</label><input type="text" id="cadUsuario" autocomplete="name" required></div>
+        <div class="campo ico ico-email"><label for="cadEmail">Email</label><input type="email" id="cadEmail" autocomplete="email" placeholder="002-02XXXXXX@aluno.undb.edu.br" maxlength="100" required>
             <p class="dica">Use seu e-mail institucional da UNDB (aluno: 002-02…@aluno.undb.edu.br · professor: nome@undb.edu.br).</p></div>
-        <div class="campo"><label for="cadSenha">Senha</label><input type="password" id="cadSenha" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required></div>
+        <div class="campo ico ico-cod"><label for="cadCodigo">Código de verificação</label>
+            <input type="text" id="cadCodigo" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="6 dígitos" required>
+            <button class="btn" type="button" id="btnEnviarCodigo" style="margin-top:8px">Enviar código para o e-mail</button>
+            <p class="dica">Enviamos um código para o seu e-mail institucional. Sem ele não é possível criar a conta.</p></div>
+        <div class="campo ico ico-senha"><label for="cadSenha">Senha</label><input type="password" id="cadSenha" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required></div>
         <button class="btn" type="submit">Criar conta</button>
         <p id="msgErro" class="msg"></p>
     </form>
@@ -21,5 +31,7 @@
 </main>
 <script src="src/core/api.js"></script>
 <script src="src/modules/auth/services/auth.js"></script>
+<script src="src/shared/cookies.js"></script>
+<script src="src/shared/efeitos.js" defer></script>
 </body>
 </html>

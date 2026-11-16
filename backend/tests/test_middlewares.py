@@ -1,18 +1,24 @@
 """Garantem que erros viram JSON padronizado, com CORS, sem vazar detalhes internos.
-Rodar: cd backend && python -m pytest -q   (não precisa de banco: get_conn é substituído)"""
+Rodar: cd backend && python -m pytest -q   (nao precisa de banco: get_conn e a auth sao substituidos)"""
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
 from psycopg import errors as pgerr
 
+from app.core.auth import somente_admin, usuario_atual
 from app.core.database import get_conn
 from app.main import app
 
 ORIGEM = {"Origin": "http://localhost:5500"}
+_USUARIO_FAKE = {"id_usuario": 1, "papel": "admin", "nome": "Teste", "email": "teste@undb.edu.br"}
 
 
 @pytest.fixture
 def client():
+    # As rotas de negocio agora exigem login; nestes testes queremos chegar no tratamento de erro,
+    # entao substituimos a autenticacao por um usuario fixo (admin).
+    app.dependency_overrides[usuario_atual] = lambda: _USUARIO_FAKE
+    app.dependency_overrides[somente_admin] = lambda: _USUARIO_FAKE
     c = TestClient(app, raise_server_exceptions=False)
     yield c
     app.dependency_overrides.clear()

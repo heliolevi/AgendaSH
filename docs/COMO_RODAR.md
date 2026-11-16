@@ -70,9 +70,37 @@ Cuidados:
 - Depois de editar o `.env`, **reinicie o uvicorn**. O `--reload` não observa esse arquivo.
 - O `.env` é lido a partir da pasta `backend`. Rode o uvicorn de dentro dela.
 
-### Recuperar senha em desenvolvimento
+### Código por e-mail (cadastro e esqueci a senha)
 
-Sem `SMTP_HOST` no `.env`, nenhum e-mail é enviado. Em `esqueciSenha.html`, informe o e-mail, olhe o **terminal do uvicorn**, copie o link da linha `Link de recuperação para ...` e abra no navegador. Para enviar de verdade, preencha `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` e `SMTP_FROM`. Defina também `RESET_SECRET` (valor longo e aleatório). Detalhes em [`API.md`](API.md).
+Criar conta e redefinir senha exigem um **código de 6 dígitos enviado por e-mail (SMTP)**. Sem SMTP configurado, as duas coisas falham com erro 503. Configure no `backend/.env`:
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seuemail@gmail.com
+SMTP_PASSWORD=<senha de app do Gmail>
+SMTP_FROM=seuemail@gmail.com
+SMTP_TLS=1
+CODIGO_SECRET=<valor longo e aleatório>
+```
+
+No Gmail é preciso ativar a verificação em 2 etapas e criar uma **senha de app** (https://myaccount.google.com/apppasswords). Não use a senha normal da conta e nunca coloque essas credenciais no git.
+
+**Tabela nova (uma vez por banco):** os códigos ficam em `verificacao_email`. Crie com:
+
+```powershell
+cd backend
+python -m app.modules.verificacao.criar_tabela
+```
+
+**Reuniões fixas (uma vez por banco):** cria a tabela `reuniao_fixa` e a coluna `reuniao.id_fixa` (só adiciona):
+
+```powershell
+cd backend
+python -m app.modules.reunioes_fixas.criar_tabela
+```
+
+**Sem SMTP, só para testar na sua máquina:** `CODIGO_NO_LOG=1` no `.env` escreve o código no terminal do uvicorn em vez de enviar o e-mail. Nunca use isso em produção.
 
 ## 4. Frontend (terminal 2)
 
@@ -117,8 +145,10 @@ Gmail, Outlook e domínios parecidos são recusados com erro 422. A regra está 
 | `&&` não é um separador válido | PowerShell 5.1: rode um comando por linha |
 | Script de ativação bloqueado | `Set-ExecutionPolicy -Scope Process Bypass` (vale só para aquele terminal) |
 | `503` / "Serviço temporariamente indisponível" | Neon fora do ar ou sem internet |
-| `422` ao cadastrar | E-mail fora do padrão UNDB ou senha com menos de 6 caracteres |
+| `422` ao cadastrar | E-mail fora do padrão UNDB, senha com menos de 6 caracteres ou código sem 6 dígitos |
 | Mudei o `.env` ou o código e nada mudou | Reinicie o uvicorn. O `--reload` demora ou não percebe mudanças dentro do OneDrive; se precisar, suba sem ele |
+| `503` "O envio de e-mail não está configurado" | Faltam as variáveis `SMTP_*` no `.env` (ou o SMTP recusou o login). Veja o log do uvicorn |
+| `429` ao pedir código | Espere 1 minuto entre pedidos (máximo 5 por hora por e-mail) |
 | `401` no login de conta antiga | A conta tem hash de senha em formato antigo (bcrypt). Use "Recuperar senha" |
 | Porta 8000 ou 5500 já em uso | Feche o processo anterior ou use outra porta (e ajuste `CORS_ORIGINS` e `api.js`) |
 

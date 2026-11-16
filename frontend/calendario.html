@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendário · AgendaSH</title>
+    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
+    <meta name="theme-color" content="#0b0a2a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,9 +20,13 @@
         <div class="cal-grade" id="grade"></div>
     </section>
     <form class="form-reuniao" id="formReuniao" novalidate>
+        <div class="tipo-agenda" role="radiogroup" aria-label="O que você quer marcar?">
+            <label><input type="radio" name="tipo" value="reuniao" checked><span>Reunião</span></label>
+            <label><input type="radio" name="tipo" value="evento"><span>Evento</span></label>
+        </div>
         <div class="campo"><label for="hora">horário</label><input type="time" id="hora" value="09:00" required></div>
         <div class="campo"><label for="modo">Modo</label><select id="modo"><option>Online</option><option>Presencial</option></select></div>
-        <div class="campo"><label for="titulo">Nome</label><input type="text" id="titulo" placeholder="Nome da reunião" maxlength="200" required></div>
+        <div class="campo"><label for="titulo" id="rotuloTitulo">Nome</label><input type="text" id="titulo" placeholder="Nome da reunião"  maxlength="200" required></div>
         <div class="campo"><label for="local">Local</label><input type="text" id="local" placeholder="Link da reunião" maxlength="100" required></div>
         <button class="btn" type="submit" id="btnSalvar">Confirmar reunião</button>
     </form>
@@ -26,5 +36,7 @@
 <script src="src/core/api.js"></script>
 <script src="src/shared/app.js"></script>
 <script src="src/modules/reunioes/pages/calendario.js"></script>
+<script src="src/shared/cookies.js"></script>
+<script src="src/shared/efeitos.js" defer></script>
 </body>
 </html>

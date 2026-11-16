@@ -4,12 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reuniões · AgendaSH</title>
+    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
+    <meta name="theme-color" content="#0b0a2a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="app escuro">
     <div class="topo"><h1 class="titulo">Reuniões</h1><span id="avatar"></span></div>
-    <div id="lista"><p class="vazio">Carregando...</p></div>
+    <div class="abas" role="tablist">
+        <button class="aba ativa" type="button" id="abaReunioes" role="tab" data-aba="reunioes">Reuniões</button>
+        <button class="aba" type="button" id="abaEventos" role="tab" data-aba="eventos">Eventos</button>
+    </div>
+    <section id="painelReunioes">
+        <a class="btn-fixas" href="reunioesFixas.html">Reuniões fixas</a>
+        <div id="lista"><p class="vazio">Carregando...</p></div>
+    </section>
+    <section id="painelEventos" hidden>
+        <div id="listaEventos"><p class="vazio">Carregando...</p></div>
+    </section>
     <p id="msgErro" class="msg"></p>
 </main>
 <script src="src/core/api.js"></script>
@@ -18,20 +34,51 @@
     const u = exigirLogin();
     document.getElementById("avatar").innerHTML = avatarHtml(u);
     renderNav("reunioes");
-    async function carregar() {
+    const erro = (e) => (document.getElementById("msgErro").textContent = e.message);
+
+    async function carregarReunioes() {
         const lista = document.getElementById("lista");
         try {
             const rs = await minhasReunioes(u);
             lista.innerHTML = rs.length ? rs.map((r) => cartaoReuniao(r, u, true)).join("") : '<p class="vazio">Você ainda não tem reuniões.</p>';
         } catch (e) { lista.innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
     }
-    document.getElementById("lista").addEventListener("click", async (ev) => {
-        const b = ev.target.closest(".excluir");
-        if (!b || !confirm("Cancelar esta reunião?")) return;
-        try { await api("/reunioes/" + b.dataset.id, { method: "DELETE" }); carregar(); }
-        catch (e) { document.getElementById("msgErro").textContent = e.message; }
+    async function carregarEventos() {
+        const lista = document.getElementById("listaEventos");
+        try {
+            const es = await listarEventos();
+            lista.innerHTML = es.length ? es.map((e) => cartaoEvento(e, u, true)).join("") : '<p class="vazio">Nenhum evento marcado.</p>';
+        } catch (e) { lista.innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
+    }
+
+    // abas
+    function mostrar(aba) {
+        document.getElementById("painelReunioes").hidden = aba !== "reunioes";
+        document.getElementById("painelEventos").hidden = aba !== "eventos";
+        document.querySelectorAll(".aba").forEach((b) => b.classList.toggle("ativa", b.dataset.aba === aba));
+        document.getElementById("msgErro").textContent = "";
+        (aba === "eventos" ? carregarEventos : carregarReunioes)();
+    }
+    document.querySelector(".abas").addEventListener("click", (ev) => {
+        const b = ev.target.closest(".aba");
+        if (b) mostrar(b.dataset.aba);
     });
-    carregar();
+
+    // cancelar reunião / evento
+    document.querySelector("main").addEventListener("click", async (ev) => {
+        const b = ev.target.closest(".excluir");
+        if (!b) return;
+        const evento = b.dataset.tipo === "evento";
+        if (!confirm(evento ? "Cancelar este evento?" : "Cancelar esta reunião?")) return;
+        try {
+            await api((evento ? "/eventos/" : "/reunioes/") + b.dataset.id, { method: "DELETE" });
+            evento ? carregarEventos() : carregarReunioes();
+        } catch (e) { erro(e); }
+    });
+
+    carregarReunioes();
 </script>
+<script src="src/shared/cookies.js"></script>
+<script src="src/shared/efeitos.js" defer></script>
 </body>
 </html>

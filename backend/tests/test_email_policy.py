@@ -2,6 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.auth import usuario_atual
 from app.core.database import get_conn
 from app.core.email_policy import validar_email_undb
 from app.main import app
@@ -69,6 +70,7 @@ def test_configuravel_por_ambiente(monkeypatch):
 @pytest.fixture
 def client():
     app.dependency_overrides[get_conn] = lambda: iter([None])
+    app.dependency_overrides[usuario_atual] = lambda: {"id_usuario": 1, "papel": "admin", "nome": "T", "email": "t@undb.edu.br"}
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
