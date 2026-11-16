@@ -3,22 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login · AgendaSH</title>
+    <title>Entrar · AgendaSH</title>
+    <meta name="description" content="AgendaSH: agendamento interno de reuniões da Software House (UNDB).">
+    <meta name="theme-color" content="#0b0a2a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preload" as="image" href="img/logo-sh.webp" type="image/webp">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app">
-    <div class="logo"><img src="BOTTOM_SH.png" alt="" onerror="this.style.display='none'"><h1>Adendy</h1><span>Softwere house</span></div>
-    <form id="formLogin" style="margin-top:36px" novalidate>
-        <div class="campo"><label for="loginUsuario">E-mail</label><input type="email" id="loginUsuario" autocomplete="email" required></div>
-        <div class="campo"><label for="loginSenha">Senha</label><input type="password" id="loginSenha" autocomplete="current-password" required></div>
-        <a class="link" style="text-align:left;margin:-6px 0 6px 10px;font-size:.65rem" href="esqueciSenha.html">Recuperar senha</a>
-        <button class="btn" type="submit" id="btnLogin">Entrar</button>
-        <p id="msgErro" class="msg"></p>
-    </form>
-    <a class="link" href="cadastro.html">Ainda não tem conta? Criar conta</a>
+<main class="app auth">
+    <section class="auth-marca">
+        <img class="auth-logo" src="img/logo-sh.webp" alt="Software House UNDB" width="520" height="511" fetchpriority="high">
+        <h1 class="auth-nome">AgendaSH</h1>
+        <p class="auth-casa">Software House</p>
+        <p class="auth-frase">Reuniões e eventos da equipe marcados em segundos, sem conflito de sala.</p>
+    </section>
+
+    <section class="auth-cartao" aria-labelledby="tituloLogin">
+        <h2 id="tituloLogin" class="auth-titulo">Entrar</h2>
+        <p class="auth-sub">Use seu e-mail institucional da UNDB.</p>
+
+        <form id="formLogin" novalidate>
+            <div class="campo ico ico-email">
+                <label for="loginUsuario">E-mail</label>
+                <input type="email" id="loginUsuario" autocomplete="email" inputmode="email" placeholder="nome@undb.edu.br" required>
+            </div>
+            <div class="campo ico ico-senha">
+                <label for="loginSenha">Senha</label>
+                <div class="senha-wrap">
+                    <input type="password" id="loginSenha" autocomplete="current-password" placeholder="Sua senha" required>
+                    <button type="button" class="ver-senha" aria-controls="loginSenha" aria-label="Mostrar senha" aria-pressed="false">
+                        <svg class="olho-aberto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="olho-fechado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A10.5 10.5 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="auth-linha"><a class="link-sm" href="esqueciSenha.html">Esqueci minha senha</a></div>
+            <button class="btn cheio" type="submit" id="btnLogin">Entrar</button>
+            <p id="msgErro" class="msg" role="alert" aria-live="polite"></p>
+        </form>
+
+        <p class="auth-rodape">Ainda não tem conta? <a href="cadastro.html">Criar conta</a></p>
+    </section>
 </main>
 <script src="src/core/api.js"></script>
 <script src="src/modules/auth/services/auth.js"></script>
+<script src="src/shared/cookies.js"></script>
+<script src="src/shared/efeitos.js" defer></script>
 </body>
 </html>

@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil · AgendaSH</title>
+    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
+    <meta name="theme-color" content="#0b0a2a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,19 +18,19 @@
     <h1 class="nome-grande" id="nome"></h1>
     <p class="nome-completo" id="nomeCompleto"></p>
     <section class="painel">
-        <h3>Informações Pessoais</h3>
-        <div class="item"><small>Nome completo</small><span id="pNome"></span></div>
-        <div class="item"><small>E-mail</small><span id="pEmail"></span></div>
-        <div class="item"><small>Membro desde</small><span id="pDesde"></span></div>
+        <h3 class="com-ico">Informações Pessoais</h3>
+        <div class="item"><span class="ic ic-user"></span><div class="txt"><small>Nome completo</small><span id="pNome"></span></div></div>
+        <div class="item"><span class="ic ic-email"></span><div class="txt"><small>E-mail</small><span id="pEmail"></span></div></div>
+        <div class="item"><span class="ic"></span><div class="txt"><small>Membro desde</small><span id="pDesde"></span></div></div>
     </section>
     <section class="painel">
-        <button class="acao" id="btnEditar" type="button">Editar seu Perfil <i>›</i></button>
+        <button class="acao ico-edit" id="btnEditar" type="button">Editar seu Perfil <i>›</i></button>
         <form id="formPerfil" hidden style="padding-top:10px" novalidate>
             <div class="campo"><label for="eNome">Nome</label><input id="eNome" maxlength="100" required></div>
             <div class="campo"><label for="eEmail">E-mail</label><input id="eEmail" type="email" maxlength="100" required></div>
             <button class="btn" type="submit">Salvar</button>
         </form>
-        <button class="acao" id="btnSair" type="button">Sair <i>›</i></button>
+        <button class="acao ico-sair" id="btnSair" type="button">Sair <i>›</i></button>
     </section>
     <p id="msgErro" class="msg"></p>
 </main>
@@ -44,6 +50,13 @@
     }
     mostrar();
     $("btnSair").onclick = sair;
+    if (ehAdmin()) {
+        const link = document.createElement("a");
+        link.className = "acao ico-admin";
+        link.href = "admin.html";
+        link.innerHTML = "Painel admin <i>\u203a</i>";
+        $("btnSair").parentNode.insertBefore(link, $("btnSair"));
+    }
     $("btnEditar").onclick = () => {
         $("eNome").value = u.nome; $("eEmail").value = u.email;
         $("formPerfil").hidden = !$("formPerfil").hidden;
@@ -59,5 +72,7 @@
         } catch (err) { $("msgErro").textContent = err.message; }
     });
 </script>
+<script src="src/shared/cookies.js"></script>
+<script src="src/shared/efeitos.js" defer></script>
 </body>
 </html>

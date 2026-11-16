@@ -10,12 +10,12 @@ def buscar(conn, id_usuario: int):
 
 
 def buscar_por_email(conn, email: str):
-    """Retorna também senha_hash (uso interno do login)."""
+    """Retorna a linha inteira (inclui senha_hash e papel) - uso interno do login."""
     return conn.execute("SELECT * FROM usuario WHERE lower(email) = lower(%s)", (email,)).fetchone()
 
 
 def buscar_hash(conn, id_usuario: int):
-    """Uso interno (recuperação de senha): id e senha_hash atual."""
+    """Uso interno (recuperacao de senha): id e senha_hash atual."""
     return conn.execute("SELECT id_usuario, senha_hash FROM usuario WHERE id_usuario = %s", (id_usuario,)).fetchone()
 
 
@@ -27,7 +27,7 @@ def atualizar_senha(conn, id_usuario: int, senha_hash: str) -> bool:
 
 def criar(conn, nome: str, email: str, senha_hash: str):
     return conn.execute(
-        f"INSERT INTO usuario (nome, email, senha_hash) VALUES (%s, %s, %s) RETURNING {COLS}",
+        f"INSERT INTO usuario (nome, email, senha_hash, verificado) VALUES (%s, %s, %s, TRUE) RETURNING {COLS}",
         (nome, email, senha_hash),
     ).fetchone()
 
@@ -42,3 +42,22 @@ def atualizar(conn, id_usuario: int, nome: str | None, email: str | None):
 
 def remover(conn, id_usuario: int) -> bool:
     return conn.execute("DELETE FROM usuario WHERE id_usuario = %s", (id_usuario,)).rowcount > 0
+
+
+# ---- papel / administracao (requer a coluna 'papel'; rode: python migrar.py) ----
+_COLS_PAPEL = "id_usuario, nome, email, criado_em, papel"
+
+
+def listar_com_papel(conn):
+    return conn.execute(f"SELECT {_COLS_PAPEL} FROM usuario ORDER BY nome").fetchall()
+
+
+def definir_papel(conn, id_usuario: int, papel: str):
+    return conn.execute(
+        f"UPDATE usuario SET papel = %s WHERE id_usuario = %s RETURNING {_COLS_PAPEL}",
+        (papel, id_usuario),
+    ).fetchone()
+
+
+def contar(conn) -> int:
+    return conn.execute("SELECT count(*) AS n FROM usuario").fetchone()["n"]
