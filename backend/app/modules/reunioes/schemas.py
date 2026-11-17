@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class ReuniaoCreate(BaseModel):
-    id_usuario: int  # organizador (TODO: virá do usuário logado)
     id_sala: int
     titulo: str = Field(min_length=1, max_length=200)
     descricao: str | None = None

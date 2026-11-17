@@ -1,0 +1,16 @@
+{
+  "name": "AgendaSH — Software House",
+  "short_name": "AgendaSH",
+  "description": "Agendamento interno de reuniões da Software House (UNDB).",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05041a",
+  "theme_color": "#0b0a2a",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

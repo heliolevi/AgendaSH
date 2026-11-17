@@ -61,15 +61,55 @@ Erros: `401` e-mail ou senha inválidos (mesma mensagem nos dois casos, de prop�
 
 ---
 
+### `POST /auth/cadastro/enviar-codigo`
+Passo 1 do cadastro. Corpo: `{ "email": "joao@undb.edu.br" }`. Só aceita e-mail da UNDB (`422` se não for) e recusa e-mail já cadastrado (`409`). Manda um **código de 6 dígitos por SMTP** para esse e-mail e responde `200 {"detail", "expira_em_minutos"}`.
+
 ### `POST /auth/esqueci-senha`
-Pede o link para redefinir a senha. Corpo: `{ "email": "ana@undb.edu.br" }`.
-Resposta **sempre** `200 {"detail": "Se o e-mail estiver cadastrado, enviamos um link..."}`, exista a conta ou não (não revela quem tem cadastro). O link é `FRONT_URL/esqueciSenha.html?token=...`, vale 30 min (`RESET_TTL_MINUTOS`) e só pode ser usado uma vez.
-Sem `SMTP_HOST` no `.env` (desenvolvimento) o e-mail **não é enviado**: o link aparece no log do uvicorn (linha `WARNING ... Link de recuperação`).
+Corpo: `{ "email": "..." }`. Manda o código de 6 dígitos para o e-mail da conta. A resposta é **sempre a mesma**, exista a conta ou não (não revela quem tem cadastro).
 
 ### `POST /auth/redefinir-senha`
-Troca a senha com o token do link. Corpo: `{ "token": "...", "nova_senha": "mínimo 6 caracteres" }`.
-`200` se deu certo. `400` (`REQUISICAO_INVALIDA`) se o link for inválido, expirado ou já usado. `422` se a senha for curta.
-Contas antigas com hash em outro formato (ex.: bcrypt) não conseguem logar (`401`); use esta recuperação para gravar uma senha válida.
+Corpo: `{ "email": "...", "codigo": "123456", "nova_senha": "mínimo 6 caracteres" }`. `200` se o código estiver certo. `400` (`Código inválido ou expirado.`) se estiver errado, expirado ou já usado. `422` se o código não tiver 6 dígitos ou a senha for curta.
+
+### Regras dos códigos (cadastro e senha)
+- Vale 10 minutos (`CODIGO_TTL_MINUTOS`) e **só uma vez**. Pedir outro invalida o anterior.
+- Um código de cadastro não serve para trocar senha, e o código de um e-mail não vale para outro.
+- **5 tentativas erradas** invalidam o código.
+- No máximo **1 envio por minuto** e **5 por hora** por e-mail (`429` além disso).
+- No banco fica só o hash (tabela `verificacao_email`), nunca o código.
+- **Sem `SMTP_HOST` o envio falha com `503`**: não existe criação de conta nem troca de senha sem receber o e-mail. Só para desenvolvimento, `CODIGO_NO_LOG=1` escreve o código no log do uvicorn.
+- Contas antigas com hash em outro formato (ex.: bcrypt) dão `401` no login; use "Recuperar senha" para gravar uma senha válida.
+
+## Eventos — `/eventos`
+
+Tabela `eventos` (já existia no banco). Funciona como uma reunião sem convites: o evento é da equipe e aparece para todos na aba **Eventos**.
+
+| Método e rota | Corpo | Resposta | Erros |
+|---|---|---|---|
+| `GET /eventos` | `?id_sala=` opcional | `200` lista ordenada por início | – |
+| `GET /eventos/{id}` | – | `200` | `404` |
+| `POST /eventos` | `{id_usuario, id_sala, titulo, descricao?, data_inicio, data_fim}` | `201` | `400` usuário/sala inexistente, `409` sala ocupada, `422` dia passado ou `data_fim <= data_inicio` |
+| `PUT /eventos/{id}` | mesmo corpo do POST | `200` | `404`, `409`, `422` |
+| `DELETE /eventos/{id}` | – | `204` | `404` |
+
+## Reuniões fixas — `/reunioes-fixas`
+
+Reunião que se repete **toda semana** no mesmo dia e horário. Ao criar, o servidor gera as reuniões reais (linhas normais de `reuniao`, com `id_fixa`) das próximas 8 semanas (`FIXAS_SEMANAS`) e as renova automaticamente a cada hora. Elas aparecem no calendário, aceitam convites e entram na checagem de conflito.
+
+| Método e rota | Corpo | Resposta | Erros |
+|---|---|---|---|
+| `GET /reunioes-fixas` | `?id_usuario=` opcional | `200` séries vigentes | – |
+| `POST /reunioes-fixas` | `{id_usuario, id_sala, titulo, descricao?, dia_semana (0=segunda…6=domingo), hora_inicio, hora_fim, data_inicio, data_fim?}` | `201` + `reunioes_criadas` e `datas_ignoradas` (datas em que a sala já estava ocupada) | `409` se **nenhuma** data coube, `422` início no passado, hora/data inválida |
+| `DELETE /reunioes-fixas/{id}` | – | `204`. Apaga a série e as reuniões dela de hoje em diante | `404` |
+
+Banco: rode uma vez `cd backend && python -m app.modules.reunioes_fixas.criar_tabela` (cria `reuniao_fixa` e a coluna `reuniao.id_fixa`; só adiciona).
+
+## Regras de data (reuniões, eventos e fixas)
+
+- **Não se agenda em dia que já passou.** `POST`/`PUT` de reunião, evento e fixa com início anterior a hoje às 00:00 (fuso `APP_TIMEZONE`, padrão `America/Fortaleza`) recebem `422` ("Não é possível agendar em um dia que já passou."). Hoje, em qualquer horário, é aceito.
+- **Uma sala não tem duas coisas ao mesmo tempo**: o conflito (`409`) vale entre reuniões **e** eventos.
+- **Limpeza automática:** ao iniciar e de hora em hora, o servidor apaga **definitivamente** reuniões (com convites) e eventos que terminaram antes de hoje às 00:00. Desligar: `LIMPEZA_REUNIOES=0`.
+
+---
 
 ## Usuários — `/usuarios`
 
@@ -79,7 +119,7 @@ Modelo de resposta `UsuarioOut`: `id_usuario`, `nome`, `email`, `criado_em`. **O
 |---|---|---|---|
 | `GET /usuarios` | – | `200` lista de `UsuarioOut` ordenada por nome | – |
 | `GET /usuarios/{id}` | – | `200` `UsuarioOut` | `404` |
-| `POST /usuarios` | `{nome (1-100), email (≤100), senha (≥6)}` | `201` `UsuarioOut` | `409` e-mail já cadastrado, `422` |
+| `POST /usuarios` | `{nome (1-100), email (≤100), senha (≥6), codigo (6 dígitos)}`. O `codigo` vem do e-mail enviado por `POST /auth/cadastro/enviar-codigo` | `201` `UsuarioOut` | `400` código inválido/expirado, `409` e-mail já cadastrado, `422` |
 | `PUT /usuarios/{id}` | `{nome?, email?}` (só o que enviar muda) | `200` `UsuarioOut` | `404`, `409`, `422` |
 | `DELETE /usuarios/{id}` | – | `204` | `404`, `409` se tem reuniões/convites |
 
@@ -92,7 +132,7 @@ Modelo de resposta `UsuarioOut`: `id_usuario`, `nome`, `email`, `criado_em`. **O
 
 Recusado com `422` (`DADOS_INVALIDOS`): Gmail, Outlook, Yahoo e qualquer outro provedor; domínios de golpe (`undb.edu.br.golpe.net`, `xundb.edu.br`, `evil.undb.edu.br`); letras de outro alfabeto e `xn--`; mais de um `@`, espaço, vírgula, `<>`, aspas, quebra de linha; `+tag`; matrícula fora do padrão. Configurável por `EMAIL_DOMINIO_ALUNO`, `EMAIL_PREFIXO_ALUNO` e `EMAIL_DOMINIOS_PROFESSOR` (ver `.env.example`). Esta regra prova o **formato**; que a pessoa **recebe** na caixa será provado pelo código de confirmação (T9/T13).
 
-> **Vai mudar:** `GET /usuarios` devolve só `id` e `nome` (T10/T14); `PUT`/`DELETE` só na própria conta (T12); cadastro com código por e-mail, domínios permitidos e senha mínima 8 (T6/T9); resposta de cadastro idêntica exista a conta ou não (T9).
+> **Vai mudar:** `GET /usuarios` devolve só `id` e `nome` (T10/T14); `PUT`/`DELETE` só na própria conta (T12); senha mínima 8 (T6/T9); resposta de cadastro idêntica exista a conta ou não (T9). O código por e-mail no cadastro já está implementado.
 
 ---
 
@@ -174,7 +214,7 @@ curl.exe -X POST http://localhost:8000/auth/login -H "Content-Type: application/
 ```
 
 ### Fluxo típico de agendamento
-1. `POST /usuarios` (criar conta) → `POST /auth/login`
+1. `POST /auth/cadastro/enviar-codigo` → código no e-mail → `POST /usuarios` (criar conta, com o código) → `POST /auth/login`
 2. `GET /salas` (ou `POST /salas` para criar uma)
 3. `POST /reunioes` → se `409`, mostrar "sala ocupada" e pedir outro horário
 4. `POST /convites` para cada participante
@@ -183,3 +223,38 @@ curl.exe -X POST http://localhost:8000/auth/login -H "Content-Type: application/
 ## Testes e logs
 - `cd backend && python -m pytest -q`: testes dos middlewares e do tratamento de erros (não usam o banco).
 - Cada requisição gera uma linha no terminal do uvicorn: `GET /salas -> 200 (12 ms) [a1b2c3d4e5f6]`. Erros 5xx incluem o traceback **só no log**, nunca na resposta.
+
+## Autenticação (token JWT) — adicionado na blindagem de segurança
+
+Todas as rotas de negócio agora exigem login por token. Público apenas:
+`POST /auth/login`, `POST /auth/token`, `POST /auth/cadastro/enviar-codigo`,
+`POST /auth/esqueci-senha`, `POST /auth/redefinir-senha`, `POST /usuarios` (cadastro) e `GET /health`.
+
+### Como funciona
+1. `POST /auth/login` com `{ "email": "...", "senha": "..." }` devolve:
+   `{ "access_token": "<jwt>", "token_type": "bearer", "usuario": { ... } }`.
+2. O front guarda o token e envia em toda chamada: `Authorization: Bearer <jwt>`.
+3. `Depends(usuario_atual)` libera rotas para qualquer logado; `Depends(somente_admin)` só para papel `admin`.
+4. Token expira em `JWT_EXPIRA_MIN` minutos (padrão 720 = 12h). Assinatura HS256 com `JWT_SECRET`.
+
+Proteção anti força-bruta: 5 tentativas erradas de login por IP+e-mail em 15 min → bloqueio de 15 min (429).
+
+### Papéis e /admin
+- Coluna `usuario.papel` (`membro` | `admin`). Rode a migração: `python migrar.py`.
+- Promova o primeiro admin: `python migrar.py seu-email@undb.edu.br`.
+- Rotas admin (exigem papel `admin`):
+  | Rota | Função |
+  |---|---|
+  | `GET /admin/resumo` | contadores (usuários, reuniões, salas, convites) |
+  | `GET /admin/usuarios` | lista usuários com papel |
+  | `PATCH /admin/usuarios/{id}` | define papel `{ "papel": "admin"\|"membro" }` |
+  | `DELETE /admin/usuarios/{id}` | remove usuário |
+
+### Testar no /docs
+Use o botão **Authorize** (fluxo OAuth2 password): `username` = e-mail, `password` = senha.
+
+### Variáveis novas no .env
+```
+JWT_SECRET=<valor longo e aleatório — nunca comitar>
+JWT_EXPIRA_MIN=720
+```

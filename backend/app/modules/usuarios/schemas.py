@@ -9,11 +9,12 @@ class UsuarioCreate(BaseModel):
     nome: str = Field(min_length=1, max_length=100)
     email: str = Field(max_length=100)
     senha: str = Field(min_length=6)
+    codigo: str = Field(pattern=r"^\d{6}$", description="Codigo de 6 digitos enviado por e-mail (POST /auth/cadastro/enviar-codigo)")
 
     @field_validator("email")
     @classmethod
     def email_da_undb(cls, v: str) -> str:
-        return validar_email_undb(v)[0]  # só e-mail institucional da UNDB; já volta em minúsculas
+        return validar_email_undb(v)[0]  # so e-mail institucional da UNDB; ja volta em minusculas
 
 
 class UsuarioUpdate(BaseModel):
@@ -31,3 +32,4 @@ class UsuarioOut(BaseModel):
     nome: str
     email: str
     criado_em: datetime | None = None
+    papel: str | None = None
