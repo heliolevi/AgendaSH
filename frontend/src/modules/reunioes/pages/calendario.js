@@ -3,7 +3,6 @@ const usuario = exigirLogin();
 const $ = (id) => document.getElementById(id);
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const DIAS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
-const DURACAO_MIN = 60; // o design só pede o horário de início: reunião de 1h
 
 let mes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let selecionado = new Date();
@@ -66,10 +65,22 @@ function atualizarTipo() {
 }
 document.querySelectorAll('input[name="tipo"]').forEach((r) => r.addEventListener("change", atualizarTipo));
 $("modo").onchange = () => { $("local").placeholder = $("modo").value === "Online" ? "Link da reunião" : "Endereço"; };
+//horário da reunião acabar não pde ser antes de iniciar.
+$("horaInicio").addEventListener("change",  ()=>{
+    const inicio = $("horaInicio").value;
+    if (!inicio) return;
+    $("horaFim").min = inicio;
+    if ($("horaFim").value && $("horaFim")<= inicio){
+    const[h,m]= inicio.split(":").map(Number);
+    const proxHora = Math.min(h+1,23);
+    const proxMin = h ===23?59 : m;
+    $("horaFim").value = `${pad(proxHora)}:${pad(proxMin)}`;
+    }
+});
 
-function paraIso(data, hhmm, somarMin = 0) {
+function paraIso(data, hhmm) {
     const [h, m] = hhmm.split(":").map(Number);
-    const d = new Date(data.getFullYear(), data.getMonth(), data.getDate(), h, m + somarMin);
+    const d = new Date(data.getFullYear(), data.getMonth(), data.getDate(), h, m);
     return `${chaveDia(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 }
 
@@ -80,7 +91,10 @@ $("formReuniao").addEventListener("submit", async (e) => {
     msg.textContent = "";
     const titulo = $("titulo").value.trim();
     const local = $("local").value.trim();
-    if (!$("hora").value) return (msg.textContent = "Informe o horário");
+    const horaInicio =$("horaInicio").value;
+    const horaFim =$("horaFim").value;
+    if(!horaInicio || !horaFim) return(msg.textContent ="Informe o horário de inicio e fim da reunião");
+    if(horaFim <= horaInicio) return(msg.textContent ="O horário de fim deve ser posterior ao de inicio");
     const evento = tipoAtual() === "evento";
     const rotulo = evento ? "evento" : "reunião";
     if (chaveDia(selecionado) < chaveDia(new Date())) return (msg.textContent = "Não é possível agendar em um dia que já passou");
@@ -95,8 +109,8 @@ $("formReuniao").addEventListener("submit", async (e) => {
                 id_sala: sala.id_sala,
                 titulo,
                 descricao: null,
-                data_inicio: paraIso(selecionado, $("hora").value),
-                data_fim: paraIso(selecionado, $("hora").value, DURACAO_MIN),
+                data_inicio: paraIso(selecionado, horaInicio),
+                data_fim: paraIso(selecionado, horaFim),
             },
         });
         msg.className = "msg ok";
