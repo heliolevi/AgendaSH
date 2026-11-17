@@ -8,13 +8,14 @@ const DURACAO_MIN = 60; // o design só pede o horário de início: reunião de 
 let mes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let selecionado = new Date();
 let reunioes = [];
+let eventos = [];
 
 $("avatar").innerHTML = avatarHtml(usuario);
 renderNav("calendario");
 
 function desenharCalendario() {
     $("mes").textContent = MESES[mes.getMonth()] + " " + mes.getFullYear();
-    const comReuniao = new Set(reunioes.map((r) => chaveDia(r.inicio)));
+    const comReuniao = new Set([...reunioes, ...eventos].map((r) => chaveDia(r.inicio)));
     const hoje = chaveDia(new Date());
     const primeiro = mes.getDay();
     const total = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
@@ -23,44 +24,48 @@ function desenharCalendario() {
     for (let d = 1; d <= total; d++) {
         const data = new Date(mes.getFullYear(), mes.getMonth(), d);
         const k = chaveDia(data);
-        const cls = ["dia", k === hoje && "hoje", k === chaveDia(selecionado) && "sel", comReuniao.has(k) && "tem"].filter(Boolean).join(" ");
-        html += `<button type="button" class="${cls}" data-dia="${d}">${d}</button>`;
+        const passado = k < hoje; // reuniões e eventos são para o futuro: dias anteriores a hoje ficam bloqueados
+        const cls = ["dia", k === hoje && "hoje", k === chaveDia(selecionado) && "sel", comReuniao.has(k) && "tem", passado && "fora"].filter(Boolean).join(" ");
+        html += `<button type="button" class="${cls}" data-dia="${d}"${passado ? " disabled" : ""}>${d}</button>`;
     }
     $("grade").innerHTML = html;
 }
 
 function desenharDoDia() {
     const k = chaveDia(selecionado);
-    const doDia = reunioes.filter((r) => chaveDia(r.inicio) === k);
+    const doDia = [
+        ...reunioes.filter((r) => chaveDia(r.inicio) === k).map((r) => ({ inicio: r.inicio, html: cartaoReuniao(r, usuario) })),
+        ...eventos.filter((e) => chaveDia(e.inicio) === k).map((e) => ({ inicio: e.inicio, html: cartaoEvento(e, usuario) })),
+    ].sort((a, b) => a.inicio - b.inicio);
     $("doDia").innerHTML = doDia.length
-        ? `<div class="secao"><h2>${dataCurta(selecionado)}</h2></div>` + doDia.map((r) => cartaoReuniao(r, usuario)).join("")
+        ? `<div class="secao"><h2>${dataCurta(selecionado)}</h2></div>` + doDia.map((x) => x.html).join("")
         : "";
 }
 
 async function carregar() {
-    try { reunioes = await minhasReunioes(usuario); } catch (e) { $("msgErro").textContent = e.message; }
+    try { [reunioes, eventos] = await Promise.all([minhasReunioes(usuario), listarEventos()]); } catch (e) { $("msgErro").textContent = e.message; }
     desenharCalendario();
     desenharDoDia();
 }
 
 $("grade").addEventListener("click", (e) => {
     const b = e.target.closest("[data-dia]");
-    if (!b) return;
+    if (!b || b.disabled) return;
     selecionado = new Date(mes.getFullYear(), mes.getMonth(), Number(b.dataset.dia));
     desenharCalendario();
     desenharDoDia();
 });
 $("ant").onclick = () => { mes = new Date(mes.getFullYear(), mes.getMonth() - 1, 1); desenharCalendario(); };
 $("prox").onclick = () => { mes = new Date(mes.getFullYear(), mes.getMonth() + 1, 1); desenharCalendario(); };
-$("modo").onchange = () => { $("local").placeholder = $("modo").value === "Online" ? "Link da reunião" : "Endereço"; };
-
-// A tabela reuniao exige uma sala. Modo + Local do formulário viram (ou reaproveitam) uma sala.
-async function obterSala(modo, local) {
-    const salas = await api("/salas");
-    const existente = salas.find((s) => s.tipo === modo && (s.localizacao_link === local || s.nome === local));
-    if (existente) return existente;
-    return api("/salas", { method: "POST", body: { nome: local.slice(0, 100), capacidade: 10, tipo: modo, localizacao_link: local } });
+const tipoAtual = () => document.querySelector('input[name="tipo"]:checked').value;
+function atualizarTipo() {
+    const evento = tipoAtual() === "evento";
+    $("btnSalvar").textContent = evento ? "Confirmar evento" : "Confirmar reunião";
+    $("titulo").placeholder = evento ? "Nome do evento" : "Nome da reunião";
+    $("rotuloTitulo").textContent = "Nome";
 }
+document.querySelectorAll('input[name="tipo"]').forEach((r) => r.addEventListener("change", atualizarTipo));
+$("modo").onchange = () => { $("local").placeholder = $("modo").value === "Online" ? "Link da reunião" : "Endereço"; };
 
 function paraIso(data, hhmm, somarMin = 0) {
     const [h, m] = hhmm.split(":").map(Number);
@@ -76,15 +81,17 @@ $("formReuniao").addEventListener("submit", async (e) => {
     const titulo = $("titulo").value.trim();
     const local = $("local").value.trim();
     if (!$("hora").value) return (msg.textContent = "Informe o horário");
-    if (!titulo) return (msg.textContent = "Informe o nome da reunião");
+    const evento = tipoAtual() === "evento";
+    const rotulo = evento ? "evento" : "reunião";
+    if (chaveDia(selecionado) < chaveDia(new Date())) return (msg.textContent = "Não é possível agendar em um dia que já passou");
+    if (!titulo) return (msg.textContent = "Informe o nome do " + rotulo);
     if (!local) return (msg.textContent = "Informe o local");
     $("btnSalvar").disabled = true;
     try {
         const sala = await obterSala($("modo").value, local);
-        await api("/reunioes", {
+        await api(evento ? "/eventos" : "/reunioes", {
             method: "POST",
             body: {
-                id_usuario: usuario.id_usuario,
                 id_sala: sala.id_sala,
                 titulo,
                 descricao: null,
@@ -93,7 +100,7 @@ $("formReuniao").addEventListener("submit", async (e) => {
             },
         });
         msg.className = "msg ok";
-        msg.textContent = "Reunião confirmada!";
+        msg.textContent = evento ? "Evento confirmado!" : "Reunião confirmada!";
         $("titulo").value = "";
         await carregar();
     } catch (err) {
