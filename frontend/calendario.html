@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,31 +13,47 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<main class="app escuro">
-    <div class="topo"><h1 class="titulo">Calendário</h1><span id="avatar"></span></div>
-    <section class="cal">
-        <div class="cal-topo"><button id="ant" type="button" aria-label="Mês anterior">‹</button><h2 id="mes"></h2><button id="prox" type="button" aria-label="Próximo mês">›</button></div>
-        <div class="cal-grade" id="grade"></div>
-    </section>
-    <form class="form-reuniao" id="formReuniao" novalidate>
-        <div class="tipo-agenda" role="radiogroup" aria-label="O que você quer marcar?">
-            <label><input type="radio" name="tipo" value="reuniao" checked><span>Reunião</span></label>
-            <label><input type="radio" name="tipo" value="evento"><span>Evento</span></label>
+    <main class="app escuro">
+        <div class="topo">
+            <h1 class="titulo">Calendário</h1><span id="avatar"></span>
         </div>
-        <div class="campo"><label for="hora">horário</label><input type="time" id="hora" value="09:00" required></div>
-        <div class="campo"><label for="modo">Modo</label><select id="modo"><option>Online</option><option>Presencial</option></select></div>
-        <div class="campo"><label for="titulo" id="rotuloTitulo">Nome</label><input type="text" id="titulo" placeholder="Nome da reunião"  maxlength="200" required></div>
-        <div class="campo"><label for="local">Local</label><input type="text" id="local" placeholder="Link da reunião" maxlength="100" required></div>
-        <button class="btn" type="submit" id="btnSalvar">Confirmar reunião</button>
-    </form>
-    <p id="msgErro" class="msg"></p>
-    <div id="doDia"></div>
-</main>
-<script src="src/core/api.js"></script>
-<script src="src/shared/app.js"></script>
-<script src="src/modules/reunioes/pages/calendario.js"></script>
-<script src="src/shared/cookies.js"></script>
-<script src="src/shared/efeitos.js" defer></script>
+        <section class="cal">
+            <div class="cal-topo"><button id="ant" type="button" aria-label="Mês anterior">‹</button>
+                <h2 id="mes"></h2><button id="prox" type="button" aria-label="Próximo mês">›</button>
+            </div>
+            <div class="cal-grade" id="grade"></div>
+        </section>
+        <form class="form-reuniao" id="formReuniao" novalidate>
+            <div class="tipo-agenda" role="radiogroup" aria-label="O que você quer marcar?">
+                <label><input type="radio" name="tipo" value="reuniao" checked><span>Reunião</span></label>
+                <label><input type="radio" name="tipo" value="evento"><span>Evento</span></label>
+            </div>
+            <div class="campo"><label for="dataIni">A partir de</label><input type="date" id="dataIni" required></div>
+            <div class="campo"><label for="dataFim">Até (opcional)</label><input type="date" id="dataFim"></div>
+            <div class="campo"><label for="horaInicio">horário de inicio</label><input type="time" id="horaInicio"
+                    value="09:00" required></div>
+            <div class="campo"><label for="horaFim">horário de fim</label><input type="time" id="horaFim" value="10:00"
+                    required></div>
+            <div class="campo"><label for="modo">Modo</label><select id="modo">
+                    <option>Online</option>
+                    <option>Presencial</option>
+                </select></div>
+            <div class="campo"><label for="titulo" id="rotuloTitulo">Nome</label><input type="text" id="titulo"
+                    placeholder="Nome da reunião" maxlength="200" required></div>
+            <div class="campo"><label for="local">Local</label><input type="text" id="local"
+                    placeholder="Link da reunião" maxlength="100" required></div>
+            <button class="btn" type="submit" id="btnSalvar">Confirmar reunião</button>
+        </form>
+        <p id="msgErro" class="msg"></p>
+        <div id="doDia"></div>
+    </main>
+    <script src="src/core/api.js"></script>
+    <script src="src/shared/app.js"></script>
+    <script src="src/modules/reunioes/pages/calendario.js"></script>
+    <script src="src/shared/cookies.js"></script>
+    <script src="src/shared/efeitos.js" defer></script>
 </body>
+
 </html>
