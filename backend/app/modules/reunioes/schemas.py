@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -26,3 +27,11 @@ class ReuniaoOut(BaseModel):
     descricao: str | None
     data_inicio: datetime
     data_fim: datetime
+
+
+
+class ReuniaoUpdate(BaseModel):
+    titulo: Optional[str] = None
+    data_inicio: Optional[datetime] = None
+    data_fim: Optional[datetime] = None
+    id_sala: Optional[int] = None

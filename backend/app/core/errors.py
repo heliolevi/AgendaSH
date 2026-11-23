@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from psycopg import errors as pgerr
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-log = logging.getLogger("agendash")
+log = logging.getLogger("AgendaSH")
 
 CODIGOS_HTTP = {
     400: "REQUISICAO_INVALIDA", 401: "NAO_AUTENTICADO", 403: "SEM_PERMISSAO", 404: "NAO_ENCONTRADO",
@@ -44,6 +44,7 @@ def erro_do_banco(exc: Exception) -> tuple[int, str, str]:
         return 409, "Horário indisponível", "CONFLITO_HORARIO"
     if isinstance(exc, (psycopg.OperationalError, psycopg.InterfaceError, TimeoutError)):
         return 503, "Serviço temporariamente indisponível. Tente novamente em instantes.", "BANCO_INDISPONIVEL"
+    print("ERRO BANCO REAL:", type(exc).__name__, exc)
     return 500, "Erro interno. Tente novamente mais tarde.", "ERRO_INTERNO"
 
 

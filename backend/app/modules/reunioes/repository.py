@@ -23,21 +23,27 @@ def existe_conflito(conn, id_sala: int, inicio, fim, ignorar_id: int | None = No
 
 
 def criar(conn, d: dict):
-    return conn.execute(
-        f"""INSERT INTO reuniao (id_usuario, id_sala, titulo, descricao, data_inicio, data_fim)
-            VALUES (%(id_usuario)s, %(id_sala)s, %(titulo)s, %(descricao)s, %(data_inicio)s, %(data_fim)s)
-            RETURNING {COLS}""",
+    cur = conn.execute(
+        """INSERT INTO reuniao (id_usuario, id_sala, titulo, descricao, data_inicio, data_fim)
+        VALUES (%(id_usuario)s, %(id_sala)s, %(titulo)s, %(descricao)s, %(data_inicio)s, %(data_fim)s)
+        RETURNING *""",
         d,
-    ).fetchone()
-
+    )
+    row = cur.fetchone()
+    if row is None:
+        return None
+    return row
 
 def atualizar(conn, id_reuniao: int, d: dict):
-    return conn.execute(
+    row = conn.execute(
         f"""UPDATE reuniao SET id_usuario = %(id_usuario)s, id_sala = %(id_sala)s, titulo = %(titulo)s,
-                   descricao = %(descricao)s, data_inicio = %(data_inicio)s, data_fim = %(data_fim)s
+            descricao = %(descricao)s, data_inicio = %(data_inicio)s, data_fim = %(data_fim)s
             WHERE id_reuniao = %(id_reuniao)s RETURNING {COLS}""",
         {**d, "id_reuniao": id_reuniao},
     ).fetchone()
+    if row is None:
+        return None
+    return row
 
 
 def remover(conn, id_reuniao: int) -> bool:
