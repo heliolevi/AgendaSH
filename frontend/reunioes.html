@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reuniões · AgendaSH</title>
-    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
+    <title>Agenda · AgendaSH</title>
+    <meta name="description" content="AgendaSH: agendamento interno de reuniões e eventos da Software House (UNDB).">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,71 +16,31 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app escuro">
-    <div class="topo"><h1 class="titulo">Reuniões</h1><span id="avatar"></span></div>
-    <div class="abas" role="tablist">
-        <button class="aba ativa" type="button" id="abaReunioes" role="tab" data-aba="reunioes">Reuniões</button>
-        <button class="aba" type="button" id="abaEventos" role="tab" data-aba="eventos">Eventos</button>
+<main class="app escuro" id="conteudo" tabindex="-1">
+    <header class="topo">
+        <div class="topo-texto">
+            <h1 class="titulo">Agenda</h1>
+            <p class="sub">Tudo o que vem pela frente, separado por dia.</p>
+        </div>
+        <span id="avatar"></span>
+    </header>
+
+    <div class="estreita">
+        <div class="barra-filtros">
+            <div class="segmentos" role="tablist" aria-label="Filtrar agenda" id="filtros">
+                <button type="button" role="tab" aria-selected="true" data-filtro="todos">Tudo</button>
+                <button type="button" role="tab" aria-selected="false" data-filtro="reuniao"><i class="ponto p-reuniao"></i>Reuniões</button>
+                <button type="button" role="tab" aria-selected="false" data-filtro="evento"><i class="ponto p-evento"></i>Eventos</button>
+            </div>
+            <a class="link-pilula" href="reunioesFixas.html" id="linkFixas">Reuniões fixas</a>
+        </div>
+        <div id="lista" role="tabpanel" aria-live="polite"><div class="esqueleto" aria-hidden="true"><div class="esq-linha"></div><div class="esq-linha"></div><div class="esq-linha"></div></div></div>
     </div>
-    <section id="painelReunioes">
-        <a class="btn-fixas" href="reunioesFixas.html">Reuniões fixas</a>
-        <div id="lista"><p class="vazio">Carregando...</p></div>
-    </section>
-    <section id="painelEventos" hidden>
-        <div id="listaEventos"><p class="vazio">Carregando...</p></div>
-    </section>
-    <p id="msgErro" class="msg"></p>
 </main>
 <script src="src/core/api.js"></script>
+<script src="src/shared/icones.js"></script>
 <script src="src/shared/app.js"></script>
-<script>
-    const u = exigirLogin();
-    document.getElementById("avatar").innerHTML = avatarHtml(u);
-    renderNav("reunioes");
-    const erro = (e) => (document.getElementById("msgErro").textContent = e.message);
-
-    async function carregarReunioes() {
-        const lista = document.getElementById("lista");
-        try {
-            const rs = await minhasReunioes(u);
-            lista.innerHTML = rs.length ? rs.map((r) => cartaoReuniao(r, u, true)).join("") : '<p class="vazio">Você ainda não tem reuniões.</p>';
-        } catch (e) { lista.innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
-    }
-    async function carregarEventos() {
-        const lista = document.getElementById("listaEventos");
-        try {
-            const es = await listarEventos();
-            lista.innerHTML = es.length ? es.map((e) => cartaoEvento(e, u, true)).join("") : '<p class="vazio">Nenhum evento marcado.</p>';
-        } catch (e) { lista.innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
-    }
-
-    // abas
-    function mostrar(aba) {
-        document.getElementById("painelReunioes").hidden = aba !== "reunioes";
-        document.getElementById("painelEventos").hidden = aba !== "eventos";
-        document.querySelectorAll(".aba").forEach((b) => b.classList.toggle("ativa", b.dataset.aba === aba));
-        document.getElementById("msgErro").textContent = "";
-        (aba === "eventos" ? carregarEventos : carregarReunioes)();
-    }
-    document.querySelector(".abas").addEventListener("click", (ev) => {
-        const b = ev.target.closest(".aba");
-        if (b) mostrar(b.dataset.aba);
-    });
-
-    // cancelar reunião / evento
-    document.querySelector("main").addEventListener("click", async (ev) => {
-        const b = ev.target.closest(".excluir");
-        if (!b) return;
-        const evento = b.dataset.tipo === "evento";
-        if (!confirm(evento ? "Cancelar este evento?" : "Cancelar esta reunião?")) return;
-        try {
-            await api((evento ? "/eventos/" : "/reunioes/") + b.dataset.id, { method: "DELETE" });
-            evento ? carregarEventos() : carregarReunioes();
-        } catch (e) { erro(e); }
-    });
-
-    carregarReunioes();
-</script>
+<script src="src/modules/reunioes/pages/agenda.js"></script>
 <script src="src/shared/cookies.js"></script>
 <script src="src/shared/efeitos.js" defer></script>
 </body>

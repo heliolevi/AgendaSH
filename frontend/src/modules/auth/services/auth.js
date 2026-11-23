@@ -1,34 +1,41 @@
+// Login, cadastro (com código por e-mail) e recuperação de senha.
+// As checagens aqui só dão resposta rápida; quem decide de verdade é o backend.
 const msg = document.getElementById("msgErro");
+const el = (id) => document.getElementById(id);
 
-const formLogin = document.getElementById("formLogin");
-if (formLogin) formLogin.addEventListener("submit", entrar);
-
-async function entrar(e) {
-    e.preventDefault();
-    msg.textContent = "";
-    const emailEl = document.getElementById("loginUsuario");
-    const senhaEl = document.getElementById("loginSenha");
-    const btn = document.getElementById("btnLogin");
-    const email = emailEl.value.trim();
-    // erro perto do campo e foco nele (sem ida ao servidor à toa)
-    if (!email) { msg.textContent = "Informe seu e-mail."; emailEl.focus(); return; }
-    if (!senhaEl.value) { msg.textContent = "Informe sua senha."; senhaEl.focus(); return; }
-
-    const rotulo = btn ? btn.textContent : "";
-    if (btn) { btn.disabled = true; btn.classList.add("carregando"); btn.textContent = "Entrando…"; }
-    try {
-        const resp = await api("/auth/login", { method: "POST", body: { email, senha: senhaEl.value } });
-        setSessao(resp.access_token, resp.usuario);
-        location.href = "index.html";
-    } catch (erro) {
-        msg.textContent = erro.message;
-        if (btn) { btn.disabled = false; btn.classList.remove("carregando"); btn.textContent = rotulo; }
+function carregandoBtn(btn, sim, rotulo) {
+    if (!btn) return;
+    if (sim) {
+        btn.dataset.rotulo = btn.textContent;
+        btn.disabled = true;
+        btn.classList.add("carregando");
+        btn.setAttribute("aria-busy", "true");
+        if (rotulo) btn.textContent = rotulo;
+    } else {
+        btn.disabled = false;
+        btn.classList.remove("carregando");
+        btn.removeAttribute("aria-busy");
+        if (btn.dataset.rotulo) btn.textContent = btn.dataset.rotulo;
     }
 }
 
+function erro(texto, campo) {
+    msg.className = "msg";
+    msg.textContent = texto;
+    if (campo) { campo.setAttribute("aria-invalid", "true"); campo.focus(); }
+}
+function sucesso(texto) {
+    msg.className = "msg ok";
+    msg.textContent = texto;
+}
+document.addEventListener("input", (e) => { if (e.target.matches("input")) e.target.removeAttribute("aria-invalid"); });
+
+// Já logado? Não faz sentido ver login/cadastro.
+if ((el("formLogin") || el("formCadastro")) && usuarioLogado() && getToken()) location.replace("index.html");
+
 // Mostrar/ocultar senha (qualquer tela com .ver-senha + aria-controls)
 document.querySelectorAll(".ver-senha").forEach((b) => {
-    const alvo = document.getElementById(b.getAttribute("aria-controls"));
+    const alvo = el(b.getAttribute("aria-controls"));
     if (!alvo) return;
     b.addEventListener("click", () => {
         const mostrar = alvo.type === "password";
@@ -39,44 +46,117 @@ document.querySelectorAll(".ver-senha").forEach((b) => {
     });
 });
 
-// Pre-checagem so para dar resposta rapida; quem decide de verdade e o backend (backend/app/core/email_policy.py).
 const EMAIL_ALUNO = /^002-02\d{1,10}@aluno\.undb\.edu\.br$/;
 const EMAIL_PROFESSOR = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@undb\.edu\.br$/;
 function emailUndbValido(email) {
     const e = email.trim().toLowerCase();
     return EMAIL_ALUNO.test(e) || EMAIL_PROFESSOR.test(e);
 }
+const MSG_EMAIL_UNDB = "Use seu e-mail institucional da UNDB (002-02…@aluno.undb.edu.br ou nome@undb.edu.br).";
 
-const formCadastro = document.getElementById("formCadastro");
-if (formCadastro) {
-    formCadastro.addEventListener("submit", async (e) => {
+// ------------------------------------------------------------ login
+const formLogin = el("formLogin");
+if (formLogin) {
+    if (new URLSearchParams(location.search).get("expirou")) erro("Sua sessão expirou. Entre de novo para continuar.");
+    formLogin.addEventListener("submit", async (e) => {
         e.preventDefault();
+        const emailEl = el("loginUsuario"), senhaEl = el("loginSenha"), btn = el("btnLogin");
+        const email = emailEl.value.trim().toLowerCase();
+        if (!email) return erro("Informe seu e-mail.", emailEl);
+        if (!senhaEl.value) return erro("Informe sua senha.", senhaEl);
         msg.textContent = "";
-        const nome = document.getElementById("cadUsuario").value.trim();
-        const email = document.getElementById("cadEmail").value.trim();
-        const senha = document.getElementById("cadSenha").value;
-        const codigo = document.getElementById("cadCodigo").value.trim();
-        if (!nome) return (msg.textContent = "Informe seu nome");
-        if (!email) return (msg.textContent = "Informe seu e-mail");
-        if (!emailUndbValido(email)) return (msg.textContent = "Use seu e-mail institucional da UNDB (002-02...@aluno.undb.edu.br ou nome@undb.edu.br).");
-        if (!/^\d{6}$/.test(codigo)) return (msg.textContent = "Digite o codigo de 6 digitos enviado ao seu e-mail");
-        if (senha.length < 6) return (msg.textContent = "Senha precisa de no minimo 6 caracteres");
+        carregandoBtn(btn, true, "Entrando…");
         try {
-            await api("/usuarios", { method: "POST", body: { nome, email: email.toLowerCase(), senha, codigo } });
-            // ja entra direto apos criar a conta
-            const resp = await api("/auth/login", { method: "POST", body: { email, senha } });
+            const resp = await api("/auth/login", { method: "POST", body: { email, senha: senhaEl.value } });
             setSessao(resp.access_token, resp.usuario);
-            location.href = "index.html";
-        } catch (erro) {
-            msg.textContent = erro.message;
+            location.replace("index.html");
+        } catch (err) {
+            // a mensagem não diz se errou o e-mail ou a senha (o backend responde igual): evita descobrir contas
+            erro(err.status === 429 ? "Muitas tentativas. Espere um pouco e tente de novo." : err.message);
+            senhaEl.value = "";
+            senhaEl.focus();
+            carregandoBtn(btn, false);
         }
     });
 }
 
-// Espera entre pedidos de codigo (o servidor tambem limita: 1 por minuto).
+// ------------------------------------------------------------ força da senha (cadastro)
+function forcaSenha(s) {
+    let p = 0;
+    if (s.length >= 6) p++;
+    if (s.length >= 10) p++;
+    if (/[a-z]/.test(s) && /[A-Z]/.test(s)) p++;
+    if (/\d/.test(s)) p++;
+    if (/[^A-Za-z0-9]/.test(s)) p++;
+    if (/^(.)\1+$/.test(s) || /^(123456|senha|password|qwerty|undb)/i.test(s)) p = 0;
+    return Math.min(p, 4);
+}
+const barraForca = el("forcaBarra");
+if (barraForca) {
+    const niveis = [["muito fraca", "#ff8fa3"], ["fraca", "#ff8fa3"], ["razoável", "#fcd34d"], ["boa", "#6ee7a8"], ["forte", "#22d3ee"]];
+    el("cadSenha").addEventListener("input", (e) => {
+        const v = e.target.value;
+        const n = v ? forcaSenha(v) : 0;
+        barraForca.style.width = v ? (n + 1) * 20 + "%" : "0";
+        barraForca.style.background = niveis[n][1];
+        el("forcaTexto").textContent = v ? `Senha ${niveis[n][0]}. Use 8+ caracteres misturando letras, números e símbolos.` : "Use 8+ caracteres misturando letras, números e símbolos.";
+    });
+}
+
+// ------------------------------------------------------------ cadastro
+const formCadastro = el("formCadastro");
+if (formCadastro) {
+    formCadastro.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nomeEl = el("cadUsuario"), emailEl = el("cadEmail"), codEl = el("cadCodigo"), senhaEl = el("cadSenha");
+        const nome = nomeEl.value.trim(), email = emailEl.value.trim().toLowerCase(), codigo = codEl.value.trim(), senha = senhaEl.value;
+        if (!nome) return erro("Informe seu nome.", nomeEl);
+        if (!email) return erro("Informe seu e-mail.", emailEl);
+        if (!emailUndbValido(email)) return erro(MSG_EMAIL_UNDB, emailEl);
+        if (!/^\d{6}$/.test(codigo)) return erro("Digite o código de 6 dígitos enviado ao seu e-mail.", codEl);
+        if (senha.length < 6) return erro("A senha precisa de no mínimo 6 caracteres.", senhaEl);
+        if (forcaSenha(senha) === 0) return erro("Essa senha é fácil demais de adivinhar. Escolha outra.", senhaEl);
+        msg.textContent = "";
+        const btn = el("btnCriar");
+        carregandoBtn(btn, true, "Criando conta…");
+        try {
+            await api("/usuarios", { method: "POST", body: { nome, email, senha, codigo } });
+            const resp = await api("/auth/login", { method: "POST", body: { email, senha } }); // já entra direto
+            setSessao(resp.access_token, resp.usuario);
+            location.replace("index.html");
+        } catch (err) {
+            erro(err.message);
+            carregandoBtn(btn, false);
+        }
+    });
+
+    // código por e-mail (o servidor também limita: 1 por minuto)
+    const btnCodigo = el("btnEnviarCodigo");
+    btnCodigo.addEventListener("click", async () => {
+        const emailEl = el("cadEmail");
+        const email = emailEl.value.trim().toLowerCase();
+        if (!email) return erro("Informe seu e-mail primeiro.", emailEl);
+        if (!emailUndbValido(email)) return erro(MSG_EMAIL_UNDB, emailEl);
+        msg.textContent = "";
+        carregandoBtn(btnCodigo, true, "Enviando…");
+        try {
+            const r = await api("/auth/cadastro/enviar-codigo", { method: "POST", body: { email } });
+            sucesso(`${r.detail} Vale por ${r.expira_em_minutos} minutos.`);
+            el("cadCodigo").focus();
+            contagem(btnCodigo, "Reenviar");
+        } catch (err) {
+            erro(err.message);
+            carregandoBtn(btnCodigo, false);
+        }
+    });
+}
+
 function contagem(botao, rotulo, segundos = 60) {
+    botao.classList.remove("carregando");
+    botao.removeAttribute("aria-busy");
     botao.disabled = true;
     let restante = segundos;
+    botao.textContent = `${rotulo} (${restante}s)`;
     const t = setInterval(() => {
         restante -= 1;
         if (restante <= 0) {
@@ -87,78 +167,59 @@ function contagem(botao, rotulo, segundos = 60) {
     }, 1000);
 }
 
-// Cadastro: botao que envia o codigo para o e-mail institucional.
-const btnEnviarCodigo = document.getElementById("btnEnviarCodigo");
-if (btnEnviarCodigo) {
-    const rotulo = btnEnviarCodigo.textContent;
-    btnEnviarCodigo.addEventListener("click", async () => {
-        msg.textContent = "";
-        const email = document.getElementById("cadEmail").value.trim();
-        if (!email) return (msg.textContent = "Informe seu e-mail");
-        if (!emailUndbValido(email)) return (msg.textContent = "Use seu e-mail institucional da UNDB (002-02...@aluno.undb.edu.br ou nome@undb.edu.br).");
-        btnEnviarCodigo.disabled = true;
-        btnEnviarCodigo.textContent = "Enviando...";
-        try {
-            const r = await api("/auth/cadastro/enviar-codigo", { method: "POST", body: { email: email.toLowerCase() } });
-            msg.textContent = `${r.detail} Vale por ${r.expira_em_minutos} minutos.`;
-            contagem(btnEnviarCodigo, rotulo);
-        } catch (erro) {
-            msg.textContent = erro.message;
-            btnEnviarCodigo.disabled = false;
-            btnEnviarCodigo.textContent = rotulo;
-        }
-    });
-}
-
-// Recuperar senha: etapa 1 pede o codigo por e-mail; etapa 2 confere o codigo e grava a nova senha.
-const formEsqueci = document.getElementById("formEsqueci");
-const formRecuperar = document.getElementById("formRecuperar");
+// ------------------------------------------------------------ recuperar senha (2 etapas)
+const formEsqueci = el("formEsqueci");
+const formRecuperar = el("formRecuperar");
 if (formEsqueci && formRecuperar) {
     let emailRecuperacao = "";
-    async function pedirCodigo(email) {
-        const r = await api("/auth/esqueci-senha", { method: "POST", body: { email } });
-        emailRecuperacao = email;
-        formEsqueci.style.display = "none";
-        formRecuperar.style.display = "";
-        msg.textContent = r.detail;
+    async function pedirCodigo(email, btn) {
+        carregandoBtn(btn, true, "Enviando…");
+        try {
+            const r = await api("/auth/esqueci-senha", { method: "POST", body: { email } });
+            emailRecuperacao = email;
+            formEsqueci.hidden = true;
+            formRecuperar.hidden = false;
+            el("passo2").classList.add("feito");
+            el("subRec").textContent = `Digite o código enviado para ${email} e escolha a nova senha.`;
+            sucesso(r.detail);
+            el("recCodigo").focus();
+            return true;
+        } catch (err) {
+            erro(err.message);
+            return false;
+        } finally {
+            carregandoBtn(btn, false);
+        }
     }
 
     formEsqueci.addEventListener("submit", async (e) => {
         e.preventDefault();
-        msg.textContent = "";
-        const email = document.getElementById("recEmail").value.trim().toLowerCase();
-        if (!email) return (msg.textContent = "Informe seu e-mail");
-        try {
-            await pedirCodigo(email);
-        } catch (erro) {
-            msg.textContent = erro.message;
-        }
+        const emailEl = el("recEmail");
+        const email = emailEl.value.trim().toLowerCase();
+        if (!email) return erro("Informe seu e-mail.", emailEl);
+        await pedirCodigo(email, el("btnPedir"));
     });
 
-    document.getElementById("linkReenviar").addEventListener("click", async (e) => {
-        e.preventDefault();
-        msg.textContent = "";
-        try {
-            await pedirCodigo(emailRecuperacao);
-        } catch (erro) {
-            msg.textContent = erro.message;
-        }
+    el("linkReenviar").addEventListener("click", async (e) => {
+        const b = e.currentTarget;
+        if (await pedirCodigo(emailRecuperacao, b)) contagem(b, "Reenviar código");
     });
 
     formRecuperar.addEventListener("submit", async (e) => {
         e.preventDefault();
-        msg.textContent = "";
-        const codigo = document.getElementById("recCodigo").value.trim();
-        const nova = document.getElementById("recSenha").value;
-        if (!/^\d{6}$/.test(codigo)) return (msg.textContent = "Digite o codigo de 6 digitos enviado ao seu e-mail");
-        if (nova.length < 6) return (msg.textContent = "Senha precisa de no minimo 6 caracteres");
-        if (nova !== document.getElementById("recConfirma").value) return (msg.textContent = "As senhas nao conferem");
+        const codEl = el("recCodigo"), novaEl = el("recSenha"), confEl = el("recConfirma");
+        if (!/^\d{6}$/.test(codEl.value.trim())) return erro("Digite o código de 6 dígitos enviado ao seu e-mail.", codEl);
+        if (novaEl.value.length < 6) return erro("A senha precisa de no mínimo 6 caracteres.", novaEl);
+        if (novaEl.value !== confEl.value) return erro("As senhas não conferem.", confEl);
+        const btn = el("btnRedefinir");
+        carregandoBtn(btn, true, "Salvando…");
         try {
-            const r = await api("/auth/redefinir-senha", { method: "POST", body: { email: emailRecuperacao, codigo, nova_senha: nova } });
-            msg.textContent = r.detail;
-            setTimeout(() => (location.href = "login.html"), 1500);
-        } catch (erro) {
-            msg.textContent = erro.message;
+            const r = await api("/auth/redefinir-senha", { method: "POST", body: { email: emailRecuperacao, codigo: codEl.value.trim(), nova_senha: novaEl.value } });
+            sucesso(r.detail);
+            setTimeout(() => location.replace("login.html"), 1500);
+        } catch (err) {
+            erro(err.message);
+            carregandoBtn(btn, false);
         }
     });
 }

@@ -14,6 +14,8 @@ class ReuniaoCreate(BaseModel):
     def fim_depois_do_inicio(self):
         if self.data_fim <= self.data_inicio:
             raise ValueError("data_fim deve ser posterior a data_inicio")
+        if self.data_fim.date() != self.data_inicio.date():
+            raise ValueError("a reunião deve começar e terminar no mesmo dia (para vários dias, use um evento)")
         return self
 
 

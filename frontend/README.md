@@ -1,7 +1,6 @@
 # Frontend AgendaSH
 
-Telas criadas pela equipe (branch `login_html`, visual roxo em `style.css`) + ligação básica com a API.
-Mantenha esse visual nas próximas telas. HTML/CSS/JS puro por enquanto; a equipe pode adotar um framework depois.
+HTML, CSS e JavaScript puro (sem build). Funciona em celular, tablet e PC.
 
 ## Rodar
 ```
@@ -10,27 +9,51 @@ cd backend && uvicorn app.main:app --reload
 # terminal 2: front
 cd frontend && python -m http.server 5500
 ```
-Abrir http://localhost:5500/login.html (a URL da API fica em `src/core/api.js`).
+Abrir http://localhost:5500/login.html.
 
-## O que já existe (MVP, baseado no protótipo mobile)
-- `welcome.html`: tela inicial (Criar conta / Entrar)
-- `cadastro.html` (`POST /usuarios`, já entra logado) · `login.html` (`POST /auth/login`)
-- `esqueciSenha.html`: só o layout (a API ainda não tem rota de recuperação)
-- `index.html`: home com próximas reuniões (organizadas por você ou com convite)
-- `calendario.html`: calendário mensal + agendar (horário, modo, nome, local). Modo+Local viram uma `sala` (reaproveita ou cria); duração fixa de 1h; erro 409 de conflito é exibido
-- `reunioes.html`: lista de reuniões com cancelar (só organizador)
-- `perfil.html`: dados do usuário, editar perfil (`PUT /usuarios/{id}`), sair
-- Logo: `BOTTOM_SH.png` (ícone oficial da SH, usado nas telas de entrada)
+## Telas
+| Arquivo | O que faz |
+|---|---|
+| `welcome.html`, `login.html`, `cadastro.html`, `esqueciSenha.html` | Entrada. No PC, login/cadastro/recuperar ficam em duas colunas (marca + formulário) |
+| `index.html` | Início: próximo compromisso com contagem regressiva, régua de hoje e os próximos 7 dias agrupados por dia |
+| `calendario.html` | Agendar e **editar** reunião ou evento com **início e fim**. Atalhos de duração, régua do dia, aviso de conflito de local antes de enviar. Evento pode terminar em outro dia |
+| `reunioes.html` | Agenda: tudo que vem pela frente, por dia, com filtro Tudo / Reuniões / Eventos, editar e cancelar |
+| `reunioesFixas.html` | Séries semanais (`/reunioes-fixas`) |
+| `perfil.html`, `admin.html`, `termos.html`, `404.html` | Conta, painel admin, termos, página não encontrada |
 
-## Estrutura de módulos (espelha o backend)
+Editar um compromisso: `calendario.html?editar=reuniao-12` ou `?editar=evento-3` (o botão de lápis dos cartões já faz isso).
+
+## Responsivo
+- **Celular (base):** uma coluna, barra inferior com os símbolos △ □ + × ○.
+- **Tablet (≥ 768px):** mais espaço, mesma barra inferior.
+- **PC (≥ 1024px):** barra lateral fixa com "Novo agendamento"; Calendário em duas colunas (calendário + dia à esquerda, formulário à direita); Início com a lista à esquerda e o resumo de hoje à direita.
+
+## Estrutura
 ```
 src/
-├── core/api.js              # cliente HTTP + usuarioLogado()
-├── shared/app.js            # guarda de login, barra inferior, leitura de reuniões
-├── shared/                  # componentes/utilitários reutilizáveis
+├── core/api.js              # cliente HTTP, token (expira sozinho), anti-iframe
+├── shared/app.js            # guarda de login, navegação, dados da agenda, cartão, régua, diálogo, avisos
+├── shared/icones.js         # ícones Phosphor (MIT) embutidos
+├── shared/efeitos.js        # animação de entrada opcional (GSAP local)
+├── shared/cookies.js
 └── modules/
-    ├── auth/services/auth.js
-    ├── usuarios/  salas/  reunioes/  convites/
-        ├── components/  pages/  services/
+    ├── auth/services/auth.js        # login, cadastro, recuperar senha
+    ├── auth/pages/welcome.js, termos.js
+    ├── reunioes/pages/inicio.js, calendario.js, agenda.js, fixas.js
+    ├── usuarios/pages/perfil.js
+    └── admin/admin.js
 ```
-Regra: um módulo não importa de outro; o que for comum vai para `shared/`. Próximos passos em `docs/TASKS.md`.
+Regra: telas não importam umas das outras; o que é comum vai para `shared/`.
+
+## Segurança (o que o front faz)
+- **CSP em toda página** (`<meta http-equiv="Content-Security-Policy">`): só roda script deste site, sem script nem estilo inline, só conversa com a API. Por isso **não existe `<script>` com código dentro do HTML nem `style="..."`**: todo código fica em `src/`.
+- **Ao publicar a API em outro endereço**, troque `API_URL` em `src/core/api.js` **e** o `connect-src` da meta CSP em todas as páginas.
+- `frame-ancestors` não funciona em meta tag, então `api.js` se recusa a rodar dentro de iframe (anti-clickjacking). Em produção, o servidor que entrega o front deve mandar `Content-Security-Policy: frame-ancestors 'none'`.
+- Token: se expirou, a sessão é limpa antes de chamar a API; `401` leva ao login com aviso "sessão expirou".
+- O que fica no navegador: só o token e `{id_usuario, nome, email, criado_em, papel}`. O menu de admin depende do papel **do token** (assinado), não do perfil salvo. Quem barra de verdade é sempre o backend.
+- Todo texto vindo da API passa por `esc()`. Links de reunião só viram `<a>` se forem `http(s)`, com `rel="noopener noreferrer"`; `javascript:` e afins aparecem como texto.
+- `fetch` sem cookies (`credentials: "omit"`), sem cache, sem seguir redirecionamento, com tempo limite de 15 s.
+- Botões ficam bloqueados enquanto enviam (sem clique duplo); confirmação acessível antes de cancelar/excluir.
+
+## Design
+Tokens, componentes e decisões em [`docs/FRONTEND_DESIGN.md`](../docs/FRONTEND_DESIGN.md).

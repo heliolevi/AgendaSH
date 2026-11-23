@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from psycopg.errors import ForeignKeyViolation
 
+from app.core.auth import somente_admin
 from app.core.database import get_conn
 from app.modules.salas import repository as repo
 from app.modules.salas.schemas import SalaCreate, SalaOut
@@ -26,7 +27,7 @@ def criar(dados: SalaCreate, conn=Depends(get_conn)):
     return repo.criar(conn, dados.model_dump())
 
 
-@router.put("/{id_sala}", response_model=SalaOut)
+@router.put("/{id_sala}", response_model=SalaOut, dependencies=[Depends(somente_admin)])  # só admin altera locais existentes
 def atualizar(id_sala: int, dados: SalaCreate, conn=Depends(get_conn)):
     sala = repo.atualizar(conn, id_sala, dados.model_dump())
     if not sala:
@@ -34,7 +35,7 @@ def atualizar(id_sala: int, dados: SalaCreate, conn=Depends(get_conn)):
     return sala
 
 
-@router.delete("/{id_sala}", status_code=204)
+@router.delete("/{id_sala}", status_code=204, dependencies=[Depends(somente_admin)])  # só admin apaga locais
 def remover(id_sala: int, conn=Depends(get_conn)):
     try:
         ok = repo.remover(conn, id_sala)

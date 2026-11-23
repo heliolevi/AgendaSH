@@ -3,8 +3,12 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()  # antes dos imports abaixo: auth/verificação leem JWT_SECRET e CODIGO_SECRET ao importar
+
+from fastapi import Depends, FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from app.core.auth import usuario_atual
 from app.core.errors import registrar_handlers

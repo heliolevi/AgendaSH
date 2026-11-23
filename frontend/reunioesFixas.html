@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
     <title>Reuniões fixas · AgendaSH</title>
-    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="description" content="AgendaSH: agendamento interno de reuniões e eventos da Software House (UNDB).">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,112 +16,60 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app escuro">
-    <div class="topo"><h1 class="titulo">Reuniões fixas</h1><span id="avatar"></span></div>
-    <p class="sub">Reuniões que se repetem toda semana no mesmo dia e horário. Elas aparecem no calendário dos próximos dois meses e são renovadas automaticamente.</p>
+<main class="app escuro" id="conteudo" tabindex="-1">
+    <header class="topo">
+        <div class="topo-texto">
+            <h1 class="titulo">Reuniões fixas</h1>
+            <p class="sub">Reuniões que se repetem toda semana no mesmo dia e horário. Elas entram no calendário das próximas semanas e se renovam sozinhas.</p>
+        </div>
+        <span id="avatar"></span>
+    </header>
 
-    <form class="form-fixa" id="formFixa" novalidate>
-        <div class="campo larga"><label for="titulo">Nome</label><input type="text" id="titulo" placeholder="Ex.: Daily da equipe" maxlength="200" required></div>
-        <div class="campo"><label for="dia">Dia da semana</label><select id="dia"></select></div>
-        <div class="campo"><label for="modo">Modo</label><select id="modo"><option>Online</option><option>Presencial</option></select></div>
-        <div class="campo"><label for="horaIni">Início</label><input type="time" id="horaIni" value="09:00" required></div>
-        <div class="campo"><label for="horaFim">Fim</label><input type="time" id="horaFim" value="10:00" required></div>
-        <div class="campo"><label for="dataIni">A partir de</label><input type="date" id="dataIni" required></div>
-        <div class="campo"><label for="dataFim">Até (opcional)</label><input type="date" id="dataFim"></div>
-        <div class="campo larga"><label for="local">Local</label><input type="text" id="local" placeholder="Link da reunião" maxlength="100" required></div>
-        <button class="btn" type="submit" id="btnSalvar">Criar reunião fixa</button>
-    </form>
-    <p id="msgErro" class="msg"></p>
-
-    <div class="secao"><h2>Minhas reuniões fixas</h2></div>
-    <div id="lista"><p class="vazio">Carregando...</p></div>
-    <a class="link" href="reunioes.html">Voltar para Reuniões</a>
+    <div class="grade-fixas">
+        <section class="painel form-painel" aria-labelledby="tNovaFixa">
+            <h2 class="painel-titulo" id="tNovaFixa">Nova reunião fixa</h2>
+            <form class="form-agenda" id="formFixa" novalidate>
+                <div class="campo">
+                    <label for="titulo">Nome</label>
+                    <input type="text" id="titulo" placeholder="Ex.: Daily da equipe" maxlength="200" required autocomplete="off">
+                </div>
+                <div class="campo">
+                    <label for="dia">Dia da semana</label>
+                    <select id="dia"></select>
+                </div>
+                <div class="linha-2">
+                    <div class="campo"><label for="horaIni">Início</label><input type="time" id="horaIni" value="09:00" step="300" required></div>
+                    <div class="campo"><label for="horaFim">Fim</label><input type="time" id="horaFim" value="10:00" step="300" required></div>
+                </div>
+                <div class="linha-2">
+                    <div class="campo"><label for="dataIni">A partir de</label><input type="date" id="dataIni" required></div>
+                    <div class="campo"><label for="dataFim">Até <span class="opcional">(opcional)</span></label><input type="date" id="dataFim"></div>
+                </div>
+                <fieldset class="espaco-topo">
+                    <legend>Onde?</legend>
+                    <div class="segmentos" id="segModo"></div>
+                </fieldset>
+                <div class="campo">
+                    <label for="local" id="rotuloLocal">Link da reunião</label>
+                    <input type="text" id="local" list="locais" maxlength="300" required autocomplete="off" aria-describedby="dicaLocal">
+                    <datalist id="locais"></datalist>
+                    <p class="dica" id="dicaLocal"></p>
+                </div>
+                <p class="dica" id="resumoFixa" aria-live="polite"></p>
+                <p class="msg" id="msgErro" role="alert"></p>
+                <div class="form-acoes"><button class="btn-pri" type="submit" id="btnSalvar">Criar reunião fixa</button></div>
+            </form>
+        </section>
+        <section class="coluna" aria-labelledby="tMinhas">
+            <div class="secao"><div><h2 id="tMinhas">Minhas reuniões fixas</h2><p>Cancelar uma série apaga as próximas reuniões dela.</p></div><a href="reunioes.html">Voltar à agenda</a></div>
+            <div id="lista" class="lista"><div class="esqueleto" aria-hidden="true"><div class="esq-linha"></div><div class="esq-linha"></div></div></div>
+        </section>
+    </div>
 </main>
 <script src="src/core/api.js"></script>
+<script src="src/shared/icones.js"></script>
 <script src="src/shared/app.js"></script>
-<script>
-    const u = exigirLogin();
-    const $ = (id) => document.getElementById(id);
-    $("avatar").innerHTML = avatarHtml(u);
-    renderNav("reunioes");
-
-    $("dia").innerHTML = DIAS_SEMANA.map((d, i) => `<option value="${i}">${d}</option>`).join("");
-    const hoje = chaveDia(new Date());
-    $("dataIni").value = hoje;
-    $("dataIni").min = hoje;
-    $("dataFim").min = hoje;
-    $("modo").onchange = () => { $("local").placeholder = $("modo").value === "Online" ? "Link da reunião" : "Endereço"; };
-
-    function cartaoFixa(f, salas) {
-        const sala = salas[f.id_sala];
-        const local = sala ? sala.localizacao_link || sala.nome : "Sem local";
-        const ate = f.data_fim ? " até " + f.data_fim.split("-").reverse().join("/") : "";
-        return `<div class="reuniao">
-            <div class="icone">${ICONE_REUNIAO}</div>
-            <div class="info">
-                <h3>${esc(f.titulo)}</h3>
-                <div class="linha">🔁 ${DIAS_SEMANA[f.dia_semana]} · ${f.hora_inicio.slice(0, 5)} às ${f.hora_fim.slice(0, 5)}</div>
-                <div class="linha">📍 ${esc(local)}${sala ? " (" + esc(sala.tipo) + ")" : ""}</div>
-                <p class="fixa-info">A partir de ${f.data_inicio.split("-").reverse().join("/")}${ate}</p>
-            </div>
-            <button class="excluir" data-id="${f.id_fixa}" title="Cancelar reunião fixa">🗑</button>
-        </div>`;
-    }
-
-    async function carregar() {
-        try {
-            const [fixas, salas] = await Promise.all([api("/reunioes-fixas?id_usuario=" + u.id_usuario), api("/salas")]);
-            const porSala = Object.fromEntries(salas.map((s) => [s.id_sala, s]));
-            $("lista").innerHTML = fixas.length ? fixas.map((f) => cartaoFixa(f, porSala)).join("") : '<p class="vazio">Você ainda não tem reuniões fixas.</p>';
-        } catch (e) { $("lista").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
-    }
-
-    $("formFixa").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const msg = $("msgErro");
-        msg.className = "msg";
-        msg.textContent = "";
-        const titulo = $("titulo").value.trim(), local = $("local").value.trim();
-        if (!titulo) return (msg.textContent = "Informe o nome da reunião");
-        if (!local) return (msg.textContent = "Informe o local");
-        if (!$("horaIni").value || !$("horaFim").value) return (msg.textContent = "Informe o horário");
-        if ($("horaFim").value <= $("horaIni").value) return (msg.textContent = "O fim precisa ser depois do início");
-        if (!$("dataIni").value || $("dataIni").value < hoje) return (msg.textContent = "Não é possível começar em um dia que já passou");
-        if ($("dataFim").value && $("dataFim").value < $("dataIni").value) return (msg.textContent = "A data final não pode ser antes da inicial");
-        $("btnSalvar").disabled = true;
-        try {
-            const sala = await obterSala($("modo").value, local);
-            const r = await api("/reunioes-fixas", {
-                method: "POST",
-                body: {
-                    id_sala: sala.id_sala, titulo, descricao: null,
-                    dia_semana: Number($("dia").value),
-                    hora_inicio: $("horaIni").value + ":00", hora_fim: $("horaFim").value + ":00",
-                    data_inicio: $("dataIni").value, data_fim: $("dataFim").value || null,
-                },
-            });
-            msg.className = "msg ok";
-            const ign = r.datas_ignoradas.length;
-            msg.textContent = `Reunião fixa criada: ${r.reunioes_criadas} reunião(ões) marcada(s)` +
-                (ign ? `. ${ign} data(s) ficaram de fora porque a sala já estava ocupada.` : ".");
-            $("titulo").value = "";
-            carregar();
-        } catch (err) {
-            msg.textContent = err.message;
-        } finally {
-            $("btnSalvar").disabled = false;
-        }
-    });
-
-    $("lista").addEventListener("click", async (ev) => {
-        const b = ev.target.closest(".excluir");
-        if (!b || !confirm("Cancelar esta reunião fixa? As próximas reuniões dela também serão apagadas.")) return;
-        try { await api("/reunioes-fixas/" + b.dataset.id, { method: "DELETE" }); carregar(); }
-        catch (e) { $("msgErro").className = "msg"; $("msgErro").textContent = e.message; }
-    });
-
-    carregar();
-</script>
+<script src="src/modules/reunioes/pages/fixas.js"></script>
 <script src="src/shared/cookies.js"></script>
 <script src="src/shared/efeitos.js" defer></script>
 </body>
