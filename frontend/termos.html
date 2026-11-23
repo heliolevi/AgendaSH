@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
     <title>Termos & Privacidade · AgendaSH</title>
     <meta name="description" content="Termos de uso e privacidade do AgendaSH.">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,10 +16,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app escuro">
-    <div class="topo"><h1 class="titulo">Termos &amp; Privacidade</h1></div>
-    <p class="sub">AgendaSH — sistema interno de agendamento da Software House. Última atualização: 2026.</p>
-
+<main class="app escuro" id="conteudo">
+    <header class="topo"><div class="topo-texto"><h1 class="titulo">Termos &amp; Privacidade</h1>
+        <p class="sub">AgendaSH, sistema interno de agendamento da Software House. Última atualização: novembro de 2026.</p></div></header>
     <section class="legal">
         <h2>1. O que é</h2>
         <p>O AgendaSH é uma ferramenta interna para agendar reuniões e eventos da equipe. O acesso é
@@ -36,7 +38,7 @@
 
         <h2>4. Segurança</h2>
         <p>As senhas são protegidas com hash, as rotas exigem login por token e o acesso é limitado por
-        tentativas para dificultar ataques. Ainda assim, nenhum sistema é 100% imune — use uma senha forte
+        tentativas para dificultar ataques. Ainda assim, nenhum sistema é 100% imune: use uma senha forte
         e não a compartilhe.</p>
 
         <h2>5. Seus dados</h2>
@@ -48,11 +50,12 @@
         navegador para o funcionamento do login e das suas preferências.</p>
 
         <h2>7. Contato</h2>
-        <p>Dúvidas? Fale com a equipe no <a href="https://instagram.com/softwarehouseundb" target="_blank" rel="noopener">@softwarehouseundb</a>.</p>
+        <p>Dúvidas? Fale com a equipe no <a href="https://instagram.com/softwarehouseundb" target="_blank" rel="noopener noreferrer">@softwarehouseundb</a>.</p>
     </section>
-
-    <a class="link" href="welcome.html">Voltar</a>
+    <a class="link link-esq" href="welcome.html" id="voltar">Voltar</a>
 </main>
+<script src="src/core/api.js"></script>
+<script src="src/modules/auth/pages/termos.js"></script>
 <script src="src/shared/cookies.js"></script>
 </body>
 </html>

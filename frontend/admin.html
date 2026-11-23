@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin · AgendaSH</title>
-    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
+    <title>Painel admin · AgendaSH</title>
+    <meta name="description" content="AgendaSH: agendamento interno de reuniões e eventos da Software House (UNDB).">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,26 +16,28 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app escuro">
-    <div class="topo"><h1 class="titulo">Painel admin</h1><span id="avatar"></span></div>
-    <p class="sub">Gestao de usuarios e visao geral do sistema.</p>
+<main class="app escuro" id="conteudo" tabindex="-1">
+    <header class="topo">
+        <div class="topo-texto">
+            <h1 class="titulo">Painel admin</h1>
+            <p class="sub">Gestão de usuários e visão geral do sistema.</p>
+        </div>
+        <span id="avatar"></span>
+    </header>
 
-    <div id="bloqueado" hidden class="painel" style="text-align:center">
+    <div id="bloqueado" hidden class="vazio">
         <h3>Acesso restrito</h3>
-        <p class="sub">Esta area e so para administradores.</p>
-        <a class="btn" href="index.html" style="margin-top:12px">Voltar ao inicio</a>
+        <p>Esta área é só para administradores.</p>
+        <a class="btn-sec" href="index.html">Voltar ao início</a>
     </div>
-
-    <section id="conteudo" hidden>
+    <section id="conteudoAdmin" hidden>
         <div class="admin-cards" id="resumo"></div>
-
-        <div class="secao"><h2>Usuarios</h2><p>Defina quem e administrador e remova contas.</p></div>
-        <div id="listaUsuarios"><p class="vazio">Carregando...</p></div>
+        <div class="secao"><div><h2>Usuários</h2><p>Defina quem é administrador e remova contas.</p></div></div>
+        <div id="listaUsuarios" class="lista-usuarios"><div class="esqueleto" aria-hidden="true"><div class="esq-linha"></div></div></div>
     </section>
-
-    <p id="msgErro" class="msg"></p>
 </main>
 <script src="src/core/api.js"></script>
+<script src="src/shared/icones.js"></script>
 <script src="src/shared/app.js"></script>
 <script src="src/modules/admin/admin.js"></script>
 <script src="src/shared/cookies.js"></script>

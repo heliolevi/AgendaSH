@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
     <title>Página não encontrada · AgendaSH</title>
     <meta name="description" content="Página não encontrada no AgendaSH.">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,15 +16,22 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app">
-    <div class="logo"><img src="img/logo-sh.webp" alt="Software House UNDB" width="520" height="511"><h1>AgendaSH</h1><span>Software House</span></div>
-    <div class="erro404">
-        <img class="ilustra" src="img/help.webp" alt="" width="128" height="128">
-        <div class="cod">404</div>
-        <p>Essa página não existe ou foi movida.</p>
-        <a class="btn cheio" href="index.html">Voltar ao início</a>
-        <a class="link" href="welcome.html">Ir para a entrada</a>
-    </div>
+<main class="app auth" id="conteudo">
+    <section class="auth-marca">
+        <img class="auth-logo" src="img/logo-sh.webp" alt="Software House UNDB" width="320" height="314" fetchpriority="high">
+        <h1 class="auth-nome">AgendaSH</h1>
+        <p class="auth-casa">Software House</p>
+        <p class="auth-frase">Essa página não existe ou foi movida. Volte para a sua agenda.</p>
+    </section>
+    <section class="auth-cartao erro404" aria-labelledby="titulo404">
+        <p class="cod" aria-hidden="true">404</p>
+        <h2 id="titulo404" class="auth-titulo">Página não encontrada</h2>
+        <p class="auth-sub">O endereço pode estar errado ou a página foi removida.</p>
+        <div class="auth-acoes">
+            <a class="btn-pri" href="index.html">Voltar ao início</a>
+            <a class="btn-sec" href="welcome.html">Ir para a entrada</a>
+        </div>
+    </section>
 </main>
 <script src="src/shared/cookies.js"></script>
 </body>

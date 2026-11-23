@@ -1,14 +1,13 @@
-const u = exigirLogin();
-document.getElementById("avatar").innerHTML = avatarHtml(u);
+// Painel admin: contadores e gestão de usuários. O backend exige papel 'admin' em todas as rotas /admin.
+const usuario = exigirLogin();
+$("avatar").innerHTML = avatarHtml(usuario);
 renderNav("perfil");
-
-const $ = (id) => document.getElementById(id);
-const erro = (e) => ($("msgErro").textContent = e.message);
 
 if (!ehAdmin()) {
     $("bloqueado").hidden = false;
+    $("bloqueado").insertAdjacentHTML("afterbegin", icone("shield-check", "ic vazio-ic"));
 } else {
-    $("conteudo").hidden = false;
+    $("conteudoAdmin").hidden = false;
     carregar();
 }
 
@@ -16,53 +15,50 @@ async function carregar() {
     try {
         const [resumo, usuarios] = await Promise.all([api("/admin/resumo"), api("/admin/usuarios")]);
         $("resumo").innerHTML = [
-            ["Usuarios", resumo.usuarios],
-            ["Reunioes", resumo.reunioes],
-            ["Salas", resumo.salas],
+            ["Usuários", resumo.usuarios],
+            ["Reuniões", resumo.reunioes],
+            ["Salas e locais", resumo.salas],
             ["Convites", resumo.convites],
-        ].map(([r, n]) => `<div class="admin-card"><b>${n}</b><span>${r}</span></div>`).join("");
-
-        $("listaUsuarios").innerHTML = usuarios.length
-            ? usuarios.map(cartaoUsuario).join("")
-            : '<p class="vazio">Nenhum usuario.</p>';
+        ].map(([r, n]) => `<div class="admin-card"><b>${Number(n) || 0}</b><span>${r}</span></div>`).join("");
+        $("listaUsuarios").innerHTML = usuarios.length ? usuarios.map(cartaoUsuario).join("") : estadoVazio("Nenhum usuário", "");
     } catch (e) {
-        erro(e);
+        $("listaUsuarios").innerHTML = estadoErro(e.message);
     }
 }
 
 function cartaoUsuario(us) {
     const admin = us.papel === "admin";
-    const souEu = us.id_usuario === u.id_usuario;
-    return `<div class="admin-user" data-id="${us.id_usuario}">
+    const souEu = us.id_usuario === usuario.id_usuario;
+    return `<article class="admin-user" data-id="${Number(us.id_usuario)}" data-nome="${esc(us.nome)}">
         <div class="admin-user-info">
-            <h3>${esc(us.nome)} ${admin ? '<span class="selo">admin</span>' : ""}</h3>
-            <div class="linha">${esc(us.email)}</div>
+            <h3>${esc(us.nome)} ${admin ? '<span class="selo">admin</span>' : ""}${souEu ? '<span class="selo">você</span>' : ""}</h3>
+            <p>${esc(us.email)}</p>
         </div>
         <div class="admin-user-acoes">
-            <button class="mini" data-acao="papel" data-papel="${admin ? "membro" : "admin"}" ${souEu ? "disabled title='Voce'" : ""}>
-                ${admin ? "Tornar membro" : "Tornar admin"}
-            </button>
-            <button class="mini perigo" data-acao="remover" ${souEu ? "disabled" : ""}>Excluir</button>
+            <button class="btn-sec" type="button" data-acao="papel" data-papel="${admin ? "membro" : "admin"}" ${souEu ? "disabled" : ""}>${admin ? "Tornar membro" : "Tornar admin"}</button>
+            <button class="btn-sec perigo" type="button" data-acao="remover" ${souEu ? "disabled" : ""}>Excluir</button>
         </div>
-    </div>`;
+    </article>`;
 }
 
 $("listaUsuarios").addEventListener("click", async (ev) => {
     const b = ev.target.closest("button[data-acao]");
     if (!b || b.disabled) return;
     const card = b.closest(".admin-user");
-    const id = card.dataset.id;
-    $("msgErro").className = "msg";
-    $("msgErro").textContent = "";
+    const id = Number(card.dataset.id), nome = card.dataset.nome;
+    const remover = b.dataset.acao === "remover";
+    const sim = await confirmar(remover
+        ? { titulo: "Excluir este usuário?", texto: `A conta de ${nome} será apagada. Isso não pode ser desfeito.`, ok: "Excluir conta", cancelar: "Manter", perigo: true }
+        : { titulo: b.dataset.papel === "admin" ? "Tornar administrador?" : "Tirar acesso de administrador?", texto: `${nome} ${b.dataset.papel === "admin" ? "poderá gerenciar usuários e ver o painel admin." : "volta a ser membro comum."}`, ok: "Confirmar" });
+    if (!sim) return;
+    ocupado(b, true);
     try {
-        if (b.dataset.acao === "papel") {
-            await api("/admin/usuarios/" + id, { method: "PATCH", body: { papel: b.dataset.papel } });
-        } else {
-            if (!confirm("Excluir este usuario? Esta acao nao pode ser desfeita.")) return;
-            await api("/admin/usuarios/" + id, { method: "DELETE" });
-        }
+        if (remover) await api("/admin/usuarios/" + id, { method: "DELETE" });
+        else await api("/admin/usuarios/" + id, { method: "PATCH", body: { papel: b.dataset.papel } });
+        avisar(remover ? "Usuário excluído." : "Papel atualizado.");
         carregar();
     } catch (e) {
-        erro(e);
+        avisar(e.message, "erro");
+        ocupado(b, false);
     }
 });

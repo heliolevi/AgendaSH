@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
     <title>Início · AgendaSH</title>
-    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="description" content="AgendaSH: agendamento interno de reuniões e eventos da Software House (UNDB).">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,31 +16,40 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app escuro">
-    <div class="topo">
-        <div>
-            <h1 class="ola">Olá! <b id="nome"></b></h1>
-            <p class="sub">Organize suas reuniões de forma simples,<br>rápida e eficiente.</p>
+<main class="app escuro" id="conteudo" tabindex="-1">
+    <header class="topo">
+        <div class="topo-texto">
+            <h1 class="ola">Olá, <b id="nome"></b></h1>
+            <p class="sub"><span id="resumoDia">Carregando sua agenda…</span></p>
         </div>
         <span id="avatar"></span>
+    </header>
+
+    <div class="grade-inicio">
+        <aside class="coluna lado-inicio" aria-label="Resumo de hoje">
+            <div id="destaque"></div>
+            <section class="painel" aria-labelledby="tHoje">
+                <h2 class="painel-titulo" id="tHoje">Hoje</h2>
+                <div id="reguaHoje"></div>
+                <ul class="legenda" aria-hidden="true">
+                    <li><i class="l-reuniao"></i>Reuniões</li>
+                    <li><i class="l-evento"></i>Eventos</li>
+                </ul>
+            </section>
+        </aside>
+        <section class="coluna" aria-labelledby="tProx">
+            <div class="secao">
+                <div><h2 id="tProx">Próximos 7 dias</h2><p>Reuniões suas, convites e eventos da equipe.</p></div>
+                <a href="reunioes.html">Ver tudo</a>
+            </div>
+            <div id="lista"><div class="esqueleto" aria-hidden="true"><div class="esq-linha"></div><div class="esq-linha"></div><div class="esq-linha"></div></div></div>
+        </section>
     </div>
-    <div class="secao"><h2>Próximas reuniões</h2><p>Acompanhe e gerencie seus compromissos</p></div>
-    <div id="lista"><p class="vazio">Carregando...</p></div>
 </main>
 <script src="src/core/api.js"></script>
+<script src="src/shared/icones.js"></script>
 <script src="src/shared/app.js"></script>
-<script>
-    const u = exigirLogin();
-    document.getElementById("nome").textContent = primeiroNome(u) + "!";
-    document.getElementById("avatar").innerHTML = avatarHtml(u);
-    renderNav("inicio");
-    minhasReunioes(u).then((rs) => {
-        const futuras = rs.filter((r) => r.fim >= new Date()).slice(0, 5);
-        document.getElementById("lista").innerHTML = futuras.length
-            ? futuras.map((r) => cartaoReuniao(r, u)).join("")
-            : '<p class="vazio">Nenhuma reunião marcada.<br>Toque no + para agendar.</p>';
-    }).catch((e) => (document.getElementById("lista").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"));
-</script>
+<script src="src/modules/reunioes/pages/inicio.js"></script>
 <script src="src/shared/cookies.js"></script>
 <script src="src/shared/efeitos.js" defer></script>
 </body>

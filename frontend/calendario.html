@@ -2,10 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Segurança: só carrega código deste site e só conversa com a API. Ao publicar, ajuste o connect-src (ver frontend/README.md). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+    <meta name="referrer" content="no-referrer">
     <title>Calendário · AgendaSH</title>
-    <meta name="description" content="AgendaSH — agendamento interno de reuniões da Software House (UNDB).">
-    <meta name="theme-color" content="#0b0a2a">
+    <meta name="description" content="AgendaSH: agendamento interno de reuniões e eventos da Software House (UNDB).">
+    <meta name="theme-color" content="#07061a">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-badge.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -13,27 +16,121 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app escuro">
-    <div class="topo"><h1 class="titulo">Calendário</h1><span id="avatar"></span></div>
-    <section class="cal">
-        <div class="cal-topo"><button id="ant" type="button" aria-label="Mês anterior">‹</button><h2 id="mes"></h2><button id="prox" type="button" aria-label="Próximo mês">›</button></div>
-        <div class="cal-grade" id="grade"></div>
-    </section>
-    <form class="form-reuniao" id="formReuniao" novalidate>
-        <div class="tipo-agenda" role="radiogroup" aria-label="O que você quer marcar?">
-            <label><input type="radio" name="tipo" value="reuniao" checked><span>Reunião</span></label>
-            <label><input type="radio" name="tipo" value="evento"><span>Evento</span></label>
+<main class="app escuro" id="conteudo" tabindex="-1">
+    <header class="topo">
+        <div class="topo-texto">
+            <h1 class="titulo">Calendário</h1>
+            <p class="sub">Escolha o dia, o início e o fim. A régua mostra o que já está marcado.</p>
         </div>
-        <div class="campo"><label for="hora">horário</label><input type="time" id="hora" value="09:00" required></div>
-        <div class="campo"><label for="modo">Modo</label><select id="modo"><option>Online</option><option>Presencial</option></select></div>
-        <div class="campo"><label for="titulo" id="rotuloTitulo">Nome</label><input type="text" id="titulo" placeholder="Nome da reunião"  maxlength="200" required></div>
-        <div class="campo"><label for="local">Local</label><input type="text" id="local" placeholder="Link da reunião" maxlength="100" required></div>
-        <button class="btn" type="submit" id="btnSalvar">Confirmar reunião</button>
-    </form>
-    <p id="msgErro" class="msg"></p>
-    <div id="doDia"></div>
+        <span id="avatar"></span>
+    </header>
+
+    <div class="grade-agendar">
+        <section class="painel area-cal" aria-labelledby="mes">
+            <div class="cal-topo">
+                <h2 id="mes" aria-live="polite"></h2>
+                <div class="cal-nav">
+                    <button id="ant" type="button" aria-label="Mês anterior"></button>
+                    <button id="irHoje" type="button" class="hoje-btn">Hoje</button>
+                    <button id="prox" type="button" aria-label="Próximo mês"></button>
+                </div>
+            </div>
+            <div class="cal-grade" id="grade" role="group" aria-label="Dias do mês"></div>
+        </section>
+
+        <section class="painel form-painel area-form" id="novo" aria-labelledby="tForm">
+            <h2 class="painel-titulo" id="tForm">Novo agendamento</h2>
+            <div class="modo-edicao" id="faixaEdicao" hidden>
+                <span id="textoEdicao">Editando</span>
+                <a class="btn-sec" href="calendario.html">Sair da edição</a>
+            </div>
+            <form class="form-agenda" id="formAgenda" novalidate>
+                <fieldset>
+                    <legend>O que você vai marcar?</legend>
+                    <div class="segmentos">
+                        <label><input type="radio" name="tipo" value="reuniao" checked><span><i class="ponto p-reuniao"></i>Reunião</span></label>
+                        <label><input type="radio" name="tipo" value="evento"><span><i class="ponto p-evento"></i>Evento</span></label>
+                    </div>
+                    <p class="dica" id="dicaTipo"></p>
+                </fieldset>
+
+                <div class="campo">
+                    <label for="titulo">Nome</label>
+                    <input type="text" id="titulo" maxlength="200" required autocomplete="off" aria-describedby="erroTitulo">
+                    <p class="erro-campo" id="erroTitulo"></p>
+                </div>
+
+                <div class="linha-2">
+                    <div class="campo">
+                        <label for="dataIni">Data</label>
+                        <input type="date" id="dataIni" required>
+                    </div>
+                    <div class="campo" id="campoDataFim" hidden>
+                        <label for="dataFim">Termina em</label>
+                        <input type="date" id="dataFim">
+                    </div>
+                </div>
+                <div class="linha-2">
+                    <div class="campo">
+                        <label for="horaIni">Início</label>
+                        <input type="time" id="horaIni" step="300" required aria-describedby="erroHorario">
+                    </div>
+                    <div class="campo">
+                        <label for="horaFim">Fim</label>
+                        <input type="time" id="horaFim" step="300" required aria-describedby="erroHorario">
+                    </div>
+                </div>
+                <p class="erro-campo" id="erroHorario"></p>
+                <div class="chips" role="group" aria-label="Duração rápida" id="duracoes">
+                    <button type="button" class="chip" data-min="30" aria-pressed="false">30 min</button>
+                    <button type="button" class="chip" data-min="60" aria-pressed="false">1h</button>
+                    <button type="button" class="chip" data-min="90" aria-pressed="false">1h30</button>
+                    <button type="button" class="chip" data-min="120" aria-pressed="false">2h</button>
+                    <button type="button" class="chip" data-min="240" aria-pressed="false">4h</button>
+                </div>
+
+                <div id="reguaForm"></div>
+                <ul class="legenda" aria-hidden="true">
+                    <li><i class="l-proposta"></i>Seu horário</li>
+                    <li><i class="l-reuniao"></i>Reuniões</li>
+                    <li><i class="l-evento"></i>Eventos</li>
+                    <li><i class="l-ocupado"></i>Local ocupado</li>
+                </ul>
+                <div class="resumo-horario" id="resumo" aria-live="polite"></div>
+
+                <fieldset class="espaco-topo">
+                    <legend>Onde?</legend>
+                    <div class="segmentos" id="segModo"></div>
+                </fieldset>
+                <div class="campo">
+                    <label for="local" id="rotuloLocal">Link da reunião</label>
+                    <input type="text" id="local" list="locais" maxlength="300" required autocomplete="off" aria-describedby="dicaLocal erroLocal">
+                    <datalist id="locais"></datalist>
+                    <p class="dica" id="dicaLocal"></p>
+                    <p class="erro-campo" id="erroLocal"></p>
+                </div>
+                <div class="campo">
+                    <label for="descricao">Descrição <span class="opcional">(opcional)</span></label>
+                    <textarea id="descricao" maxlength="1000" rows="3" placeholder="Pauta, o que levar, observações"></textarea>
+                </div>
+
+                <p class="msg" id="msgErro" role="alert"></p>
+                <div class="form-acoes">
+                    <button class="btn-pri" type="submit" id="btnSalvar">Confirmar reunião</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="area-dia" aria-labelledby="tDia">
+            <div class="secao"><div><h2 id="tDia">Dia</h2><p id="subDia"></p></div></div>
+            <div id="doDia">
+                <div class="esqueleto" aria-hidden="true"><div class="esq-linha"></div><div class="esq-linha"></div></div>
+            </div>
+        </section>
+    </div>
 </main>
 <script src="src/core/api.js"></script>
+<script src="src/shared/icones.js"></script>
 <script src="src/shared/app.js"></script>
 <script src="src/modules/reunioes/pages/calendario.js"></script>
 <script src="src/shared/cookies.js"></script>
