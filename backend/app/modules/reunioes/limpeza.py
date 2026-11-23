@@ -10,6 +10,7 @@ import logging
 import os
 
 import psycopg
+from psycopg.rows import dict_row
 
 from app.core.database import DATABASE_URL
 from app.core.tempo import inicio_de_hoje  # noqa: F401  (reexportado)
@@ -28,7 +29,7 @@ def executar_limpeza() -> int:
     Conexão própria (commit no fim). Nunca levanta: erro vai para o log."""
     apagadas = 0
     try:
-        with psycopg.connect(DATABASE_URL, connect_timeout=30) as conn:
+        with psycopg.connect(DATABASE_URL, connect_timeout=30, row_factory=dict_row) as conn:
             limite = inicio_de_hoje()
             reunioes = repo.apagar_passadas(conn, limite)
             eventos = eventos_repo.apagar_passados(conn, limite)
@@ -38,7 +39,7 @@ def executar_limpeza() -> int:
     except Exception:
         log.exception("Falha na limpeza de reuniões antigas (tenta de novo no próximo ciclo)")
     try:  # separado: se a tabela de fixas ainda não existir, a limpeza acima não é prejudicada
-        with psycopg.connect(DATABASE_URL, connect_timeout=30) as conn:
+        with psycopg.connect(DATABASE_URL, connect_timeout=30, row_factory=dict_row) as conn:
             novas = fixas_service.renovar_todas(conn, inicio_de_hoje().date())
         if novas:
             log.info("Reuniões fixas: %d reunião(ões) criada(s) para os próximos dias.", novas)

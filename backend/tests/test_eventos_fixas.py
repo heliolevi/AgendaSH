@@ -207,3 +207,13 @@ def test_sql_de_conflito_tem_guarda_contra_null():
     assert "%(ign)s::int IS NULL OR NOT" in visto["sql"]
     assert visto["params"]["ign"] is None and visto["params"]["tipo"] is None
     assert "FROM reuniao" in visto["sql"] and "FROM eventos" in visto["sql"]
+
+
+def test_reuniao_nao_pode_atravessar_a_meia_noite_mas_evento_pode(client, monkeypatch):
+    corpo = _corpo(AMANHA)
+    corpo["data_fim"] = (AMANHA + timedelta(days=1, hours=1)).isoformat()
+    r = client.post("/reunioes", json=corpo)
+    assert r.status_code == 422 and "mesmo dia" in r.json()["detail"]
+    monkeypatch.setattr(eventos_router, "sala_ocupada", lambda *a, **k: False)
+    monkeypatch.setattr(eventos_repo, "criar", lambda conn, d: {"id_eventos": 6, **d})
+    assert client.post("/eventos", json=corpo).status_code == 201

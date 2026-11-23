@@ -89,3 +89,16 @@ def test_nao_organizador_nao_convida(monkeypatch):
     monkeypatch.setattr(convites_router.reunioes_repo, "buscar", lambda conn, i: dict(REUNIAO_DO_1))
     r = _client().post("/convites", json={"id_reuniao": 10, "id_usuario": 3})
     assert r.status_code == 403
+
+
+def test_membro_nao_altera_nem_apaga_salas_mas_admin_sim(monkeypatch):
+    from app.modules.salas import repository as salas_repo
+    monkeypatch.setattr(salas_repo, "remover", lambda conn, id_sala: True)
+    monkeypatch.setattr(salas_repo, "atualizar", lambda conn, id_sala, d: {"id_sala": id_sala, **d})
+    sala = {"nome": "Sala", "tipo": "Online", "localizacao_link": "https://meet.exemplo.com/x"}
+    _logar(MEMBRO)
+    c = _client()
+    assert c.delete("/salas/1").status_code == 403
+    assert c.put("/salas/1", json=sala).status_code == 403
+    _logar(ADMIN)
+    assert _client().delete("/salas/1").status_code == 204
