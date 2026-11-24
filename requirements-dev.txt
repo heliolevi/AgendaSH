@@ -2,3 +2,4 @@
 pytest
 httpx
 psycopg2-binary  # só para create_table.py / test_db.py
+aiosmtpd  # servidor SMTP local nos testes de envio de e-mail

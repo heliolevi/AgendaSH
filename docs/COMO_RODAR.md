@@ -86,6 +86,31 @@ CODIGO_SECRET=<valor longo e aleatório>
 
 No Gmail é preciso ativar a verificação em 2 etapas e criar uma **senha de app** (https://myaccount.google.com/apppasswords). Não use a senha normal da conta e nunca coloque essas credenciais no git.
 
+**Brevo (smtp-relay.brevo.com):**
+
+```
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=<login SMTP mostrado no Brevo, termina em @smtp-brevo.com>
+SMTP_PASSWORD=<chave SMTP gerada no Brevo, não a senha da conta>
+SMTP_FROM=<e-mail remetente VERIFICADO no Brevo>
+SMTP_TLS=1
+```
+
+O `SMTP_FROM` é obrigatório no Brevo e precisa ser um remetente verificado (Senders & IP). O login `…@smtp-brevo.com` não serve como remetente.
+
+**Se o e-mail não chegar**, o motivo exato aparece no terminal do uvicorn (linha `SMTP: ...`):
+
+| Mensagem no log | O que fazer |
+|---|---|
+| `SMTP_HOST não configurado` | Preencha as variáveis `SMTP_*` e reinicie o uvicorn |
+| `recusou o login` | Confira `SMTP_USER` e `SMTP_PASSWORD` (no Brevo, a chave SMTP) |
+| `recusou o remetente` / `SMTP_FROM ausente ou inválido` | Use um remetente verificado no provedor |
+| `falha TLS` | Porta 587 com `SMTP_TLS=1`; porta 465 com `SMTP_TLS=ssl` |
+| `não foi possível falar com host:porta` | Host, porta ou firewall/rede bloqueando |
+
+Aspas e espaços ao redor dos valores são ignorados.
+
 **Tabela nova (uma vez por banco):** os códigos ficam em `verificacao_email`. Crie com:
 
 ```powershell

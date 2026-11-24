@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field, field_validator
 
@@ -55,6 +55,13 @@ def _enviar(email: str, codigo: str, finalidade: str) -> None:
         raise HTTPException(503, e.publico)
 
 
+def _enviar_sem_erro(email: str, codigo: str, finalidade: str) -> None:
+    try:
+        enviar_codigo(email, codigo, finalidade, codigos.VALIDADE_MIN)
+    except EmailNaoEnviado:
+        pass  # ja registrado no log por email_sender
+
+
 def _autenticar(conn, email: str, senha: str, request: Request) -> dict:
     """Confere e-mail/senha com protecao anti forca-bruta. Devolve o usuario ou levanta 401/429."""
     ip = request.client.host if request.client else "desconhecido"
@@ -102,12 +109,14 @@ def enviar_codigo_cadastro(dados: CodigoCadastroIn, conn=Depends(get_conn)):
 
 
 @router.post("/esqueci-senha")
-def esqueci_senha(dados: EsqueciSenhaIn, conn=Depends(get_conn)):
+def esqueci_senha(dados: EsqueciSenhaIn, tarefas: BackgroundTasks, conn=Depends(get_conn)):
     """Manda o codigo para o e-mail da conta. A resposta e a mesma exista a conta ou nao."""
     email = dados.email.strip().lower()
     codigo = codigos.emitir(conn, email, "senha")  # limite de envios vale para qualquer e-mail (nao revela contas)
     if usuarios_repo.buscar_por_email(conn, email):
-        _enviar(email, codigo, "senha")
+        # em segundo plano: a resposta (conteudo e tempo) fica igual para e-mail existente ou nao, e falha de SMTP
+        # nao revela que a conta existe (o motivo vai para o log)
+        tarefas.add_task(_enviar_sem_erro, email, codigo, "senha")
     return {"detail": MSG_CODIGO_SENHA, "expira_em_minutos": codigos.VALIDADE_MIN}
 
 
