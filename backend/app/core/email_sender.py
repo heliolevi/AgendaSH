@@ -27,41 +27,76 @@ class EmailNaoEnviado(Exception):
         self.publico = publico
 
 
+def _env(nome: str, padrao: str = "") -> str:
+    """Lê do ambiente tirando espaços e aspas que costumam sobrar ao colar no .env."""
+    return (os.getenv(nome) or padrao).strip().strip("\"'").strip()
+
+
 def smtp_configurado() -> bool:
-    return bool(os.getenv("SMTP_HOST"))
+    return bool(_env("SMTP_HOST"))
+
+
+def _falha(motivo: str) -> EmailNaoEnviado:
+    """Registra o motivo técnico (sem senha) no log e devolve o erro genérico para o usuário."""
+    log.error("SMTP: %s", motivo)
+    return EmailNaoEnviado("Não foi possível enviar o e-mail agora. Tente novamente em instantes.")
+
+
+def _configuracao() -> dict:
+    host = _env("SMTP_HOST")
+    try:
+        porta = int(_env("SMTP_PORT", "587"))
+    except ValueError:
+        raise _falha("SMTP_PORT inválida (use um número, ex.: 587)") from None
+    modo = _env("SMTP_TLS", "ssl" if porta == 465 else "1").lower()
+    if modo not in ("1", "ssl", "0"):
+        raise _falha("SMTP_TLS inválido (use 1 = STARTTLS, ssl ou 0)")
+    usuario = _env("SMTP_USER")
+    remetente = _env("SMTP_FROM") or usuario
+    if "@" not in remetente:
+        raise _falha("SMTP_FROM ausente ou inválido: informe um e-mail remetente verificado no provedor (ex.: no-reply@seudominio)")
+    if usuario and remetente == usuario and host.endswith("brevo.com"):
+        raise _falha("no Brevo, SMTP_FROM precisa ser um remetente verificado; o login SMTP (…@smtp-brevo.com) não serve como remetente")
+    return {"host": host, "porta": porta, "modo": modo, "usuario": usuario, "senha": _env("SMTP_PASSWORD"), "remetente": remetente}
 
 
 def enviar_codigo(destino: str, codigo: str, finalidade: str, validade_min: int) -> None:
-    host = os.getenv("SMTP_HOST")
-    if not host:
+    if not smtp_configurado():
         if os.getenv("CODIGO_NO_LOG") == "1":
             log.warning("[DEV] CODIGO_NO_LOG=1, e-mail NÃO enviado. Código (%s) para %s: %s", finalidade, destino, codigo)
             return
         log.error("SMTP_HOST não configurado: não foi possível enviar o código para %s", destino)
         raise EmailNaoEnviado("O envio de e-mail não está configurado no servidor. Fale com o administrador.")
 
+    cfg = _configuracao()
     msg = EmailMessage()
     msg["Subject"] = ASSUNTO[finalidade]
-    msg["From"] = os.getenv("SMTP_FROM") or os.getenv("SMTP_USER") or "no-reply@agendash.local"
+    msg["From"] = cfg["remetente"]
     msg["To"] = destino
     msg.set_content(
         f"Seu código para {MOTIVO[finalidade]}:\n\n    {codigo}\n\n"
         f"Ele vale por {validade_min} minutos e só pode ser usado uma vez.\n"
         "Se não foi você quem pediu, ignore este e-mail. Ninguém do AgendaSH pede esse código."
     )
-    porta = int(os.getenv("SMTP_PORT", "587"))
-    modo = os.getenv("SMTP_TLS", "1")
+    onde = f"{cfg['host']}:{cfg['porta']}"
     try:
-        if modo == "ssl":
-            s = smtplib.SMTP_SSL(host, porta, timeout=20, context=ssl.create_default_context())
+        if cfg["modo"] == "ssl":
+            s = smtplib.SMTP_SSL(cfg["host"], cfg["porta"], timeout=20, context=ssl.create_default_context())
         else:
-            s = smtplib.SMTP(host, porta, timeout=20)
+            s = smtplib.SMTP(cfg["host"], cfg["porta"], timeout=20)
         with s:
-            if modo == "1":
+            if cfg["modo"] == "1":
                 s.starttls(context=ssl.create_default_context())
-            if os.getenv("SMTP_USER"):
-                s.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASSWORD", ""))
+            if cfg["usuario"]:
+                s.login(cfg["usuario"], cfg["senha"])
             s.send_message(msg)
-    except Exception:  # o motivo fica no log (sem a senha); o usuário recebe mensagem genérica
-        log.exception("Falha ao enviar e-mail de código (%s) para %s", finalidade, destino)
-        raise EmailNaoEnviado("Não foi possível enviar o e-mail agora. Tente novamente em instantes.") from None
+    except smtplib.SMTPAuthenticationError:
+        raise _falha(f"{onde} recusou o login: confira SMTP_USER e SMTP_PASSWORD (no Brevo use a chave SMTP, não a senha da conta)") from None
+    except smtplib.SMTPSenderRefused:
+        raise _falha(f"{onde} recusou o remetente {cfg['remetente']}: verifique esse e-mail no provedor") from None
+    except smtplib.SMTPRecipientsRefused:
+        raise _falha(f"{onde} recusou o destinatário {destino}") from None
+    except ssl.SSLError as e:
+        raise _falha(f"falha TLS com {onde} ({e.reason or e}): confira SMTP_PORT e SMTP_TLS (587 = 1, 465 = ssl)") from None
+    except (OSError, smtplib.SMTPException) as e:
+        raise _falha(f"não foi possível falar com {onde}: {type(e).__name__}: {e}") from None
